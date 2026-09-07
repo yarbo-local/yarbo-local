@@ -31,6 +31,18 @@ uv run yarbo-local probe 192.168.40.23 get_device_msg
 
 `probe` only sends commands on a short allowlist of reads plus the wake-up command. It will not send anything that moves the robot, changes the map, or touches settings.
 
+## Can't see the base station in your router or controller?
+
+You won't. The base station bridges the rover's HaLow link onto your LAN behind a locally administered MAC that never associates with an access point or asks your DHCP server for an address. It picks a static address for itself, inside your DHCP pool, and it has no management page. Network controllers such as UniFi list clients by association or wired port, so the base station simply does not exist to them, even while it answers on ports 1883, 8883 and 22.
+
+Do not spend an afternoon on this. Scan the subnet instead:
+
+```bash
+uv run yarbo-local discover 192.168.1.0/24 --wait 8
+```
+
+Every host carrying Yarbo traffic is listed with its MAC and a classification. The rover shows up under the vendor's Wi-Fi radio; the base station shows up behind the bridge MAC. Then protect yourself from the address collision Yarbo set up for you: either shrink your DHCP pool so it starts above the base station's address, or put the Yarbo Wi-Fi association on an isolated VLAN so the whole bridge moves out of your main network.
+
 ## Safety and privacy
 
 The robot's broker has no authentication. Anyone on its network segment can drive it. Put the robot on its own VLAN, allow only the machine running this tooling (and later Home Assistant) to reach port 1883, and think deliberately about whether the robot should have internet access at all. Captures contain your serial number, coordinates and network details; use `--redact` and review the file before sharing it.
