@@ -1,0 +1,25 @@
+# DeviceMSG field map. Empty on purpose: it is generated from captures.
+#
+# Run `yarbo-local dump capture.jsonl --keys` to get the inventory, then describe
+# each path here. Entry shape:
+#
+#   BatteryMSG.capacity:
+#     type: int
+#     unit: "%"
+#     entity: sensor
+#     device_class: battery
+#     enabled: true
+#     status: candidate | verified
+#     evidence: fixtures/<fw>/<scenario>.jsonl
+#     notes: firmware reports 95 at full; vendor SDK rescales 90..95 to 90..100
+#
+# Known scaling and sentinels from other projects, all candidate until captured:
+#   mower_head_info0N.*_blade_motor_current  : divide by 100 for amps
+#   wireless_recharge.output_voltage/current : divide by 1000 when > 1000
+#   ultrasonic_msg.{lf_dis,mt_dis,rf_dis}     : 9999 means no obstacle
+#   BatteryMSG.voltage/current                : may arrive in mV / mA
+#   StateMSG.volume                           : float 0..1
+#   system_info.*                             : keys contain literal dots
+
+version: 0
+fields: {}

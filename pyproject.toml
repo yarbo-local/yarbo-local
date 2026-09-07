@@ -1,0 +1,87 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "yarbo-local"
+version = "0.0.1"
+description = "Local-first asyncio library and tooling for Yarbo robots over their LAN MQTT broker. No cloud."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.13"
+authors = [{ name = "Yarbo Local contributors" }]
+keywords = ["yarbo", "mqtt", "robot-mower", "home-assistant", "asyncio"]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Framework :: AsyncIO",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Home Automation",
+  "Typing :: Typed",
+]
+dependencies = [
+  "aiomqtt>=2.5,<3",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3",
+  "pytest-asyncio>=0.24",
+  "ruff>=0.6",
+  "mypy>=1.11",
+]
+
+[project.scripts]
+yarbo-local = "yarbo_local.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/yarbo-local/yarbo-local"
+Issues = "https://github.com/yarbo-local/yarbo-local/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/yarbo_local"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "protocol", "docs", "tests", "README.md", "LICENSE"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+  "A", "B", "C4", "E", "F", "I", "ISC", "N", "PIE", "PL", "PT", "RET", "RUF",
+  "S", "SIM", "T20", "TRY", "UP", "W",
+]
+ignore = [
+  "PLR0913",  # many arguments: CLI entry points
+  "PLR2004",  # magic numbers: protocol constants are documented inline
+  "T201",     # print: this package ships a CLI
+  "TRY003",   # long exception messages are fine here
+  "ISC001",   # conflicts with the formatter
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "PLR2004"]
+"src/yarbo_local/probe.py" = ["PLR0912", "PLR0915"]
+
+[tool.ruff.lint.isort]
+force-sort-within-sections = true
+combine-as-imports = true
+known-first-party = ["yarbo_local"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_unreachable = true
+warn_unused_ignores = true
+packages = ["yarbo_local"]
+mypy_path = "src"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
