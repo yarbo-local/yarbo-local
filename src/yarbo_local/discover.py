@@ -88,12 +88,28 @@ def classify(mac: str | None, hostname: str | None, serials: list[str]) -> str:
 
 
 async def _tcp_open(host: str, port: int, timeout: float) -> bool:
+    """Non-blocking connect on a raw socket.
+
+    ``asyncio.open_connection`` resolves even IP literals through the default
+    thread pool, so scanning a /24 with dozens of concurrent probes queues the
+    lookups behind each other and the per-host timeout expires before the
+    connect is attempted. A raw ``sock_connect`` on a numeric address avoids
+    that path entirely.
+    """
+    loop = asyncio.get_running_loop()
+    try:
+        family = socket.AF_INET6 if ":" in host else socket.AF_INET
+        sock = socket.socket(family, socket.SOCK_STREAM)
+    except OSError:
+        return False
+    sock.setblocking(False)
     try:
         async with asyncio.timeout(timeout):
-            _, writer = await asyncio.open_connection(host, port)
+            await loop.sock_connect(sock, (host, port))
     except (TimeoutError, OSError):
         return False
-    writer.close()
+    finally:
+        sock.close()
     return True
 
 
@@ -131,7 +147,7 @@ async def discover(
     port: int = 1883,
     connect_timeout: float = 0.6,
     wait: float = 6.0,
-    concurrency: int = 64,
+    concurrency: int = 32,
 ) -> list[BrokerHit]:
     """Scan ``hosts`` for MQTT brokers that carry snowbot traffic."""
     sem = asyncio.Semaphore(concurrency)

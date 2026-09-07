@@ -1,0 +1,4 @@
+{"t":1788809249.199,"ts":"2026-09-07T19:27:29.199+00:00","topic":"snowbot/SN-7814df9d/device/heart_beat","bytes":19,"enc":"json","payload":{"working_state":0}}
+{"t":1788809254.21,"ts":"2026-09-07T19:27:34.209+00:00","topic":"snowbot/SN-7814df9d/device/heart_beat","bytes":19,"enc":"json","payload":{"working_state":0}}
+{"t":1788809259.322,"ts":"2026-09-07T19:27:39.321+00:00","topic":"snowbot/SN-7814df9d/device/heart_beat","bytes":19,"enc":"json","payload":{"working_state":0}}
+{"t":1788809264.262,"ts":"2026-09-07T19:27:44.261+00:00","topic":"snowbot/SN-7814df9d/device/heart_beat","bytes":19,"enc":"json","payload":{"working_state":0}}

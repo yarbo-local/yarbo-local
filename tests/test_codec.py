@@ -1,3 +1,4 @@
+import base64
 import json
 import zlib
 
@@ -60,3 +61,13 @@ def test_flatten() -> None:
         "x": None,
         "system_info.cpu.Temperature": 40,
     }
+
+
+def test_decode_blob_b64zlib_and_jsonstr() -> None:
+    inner = {"areas": [], "nogozones": [{"id": 1}]}
+    blob = base64.b64encode(zlib.compress(json.dumps(inner).encode())).decode()
+    assert codec.decode_blob(blob) == (inner, "b64zlib")
+    assert codec.decode_blob(json.dumps(inner)) == (inner, "jsonstr")
+    assert codec.decode_blob("") is None
+    assert codec.decode_blob("not a blob") is None
+    assert codec.decode_blob({"already": "decoded"}) is None

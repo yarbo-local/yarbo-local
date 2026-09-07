@@ -1,0 +1,4 @@
+{"t":1788809622.871,"phase":"collect","topic":"snowbot/SN-7814df9d/app/get_state_msg","enc":"zlib","payload":{}}
+{"t":1788809622.877,"phase":"collect","topic":"snowbot/SN-7814df9d/device/data_feedback","enc":"zlib","payload":{"data":{"value":[1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0]},"msg":"State messages retrieved successfully.","state":0,"topic":"get_state_msg"}}
+{"t":1788809625.656,"phase":"collect","topic":"snowbot/SN-7814df9d/device/heart_beat","enc":"json","payload":{"working_state":0}}
+{"t":1788809630.675,"phase":"collect","topic":"snowbot/SN-7814df9d/device/heart_beat","enc":"json","payload":{"working_state":0}}

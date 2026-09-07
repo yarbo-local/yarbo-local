@@ -63,6 +63,7 @@ class ProbeResult:
     other_feedback: list[tuple[str, Any]] = field(default_factory=list)
     device_msg_changes: dict[str, tuple[Any, Any]] = field(default_factory=dict)
     app_side_seen: list[tuple[str, Any]] = field(default_factory=list)
+    echoed: bool = False
     records: list[dict[str, Any]] = field(default_factory=list)
 
     def render(self) -> str:
@@ -83,15 +84,25 @@ class ProbeResult:
                 else f"reply: state={state} msg={msg!r}"
             )
             data = self.reply.get("data")
-            text = json.dumps(data, separators=(",", ":"))
-            lines.append(
-                f"data ({len(text)} chars): {text[:1500]}{'...' if len(text) > 1500 else ''}"
-            )
+            blob = codec.decode_blob(data)
+            if blob is not None:
+                data, label = blob
+                text = json.dumps(data, separators=(",", ":"))
+                lines.append(
+                    f"data ({label}, {len(text)} chars decoded): "
+                    f"{text[:1500]}{'...' if len(text) > 1500 else ''}"
+                )
+            else:
+                text = json.dumps(data, separators=(",", ":"))
+                lines.append(
+                    f"data ({len(text)} chars): {text[:1500]}{'...' if len(text) > 1500 else ''}"
+                )
         for leaf, value in self.other_feedback:
             text = json.dumps(value, separators=(",", ":"))
             lines.append(f"also on {leaf}: {text[:500]}{'...' if len(text) > 500 else ''}")
+        lines.append(f"broker echoed our publish: {'yes' if self.echoed else 'no'}")
         for topic, value in self.app_side_seen:
-            lines.append(f"app side traffic during probe: {topic} {json.dumps(value)[:200]}")
+            lines.append(f"other app-side traffic during probe: {topic} {json.dumps(value)[:200]}")
         if self.device_msg_changes:
             lines.append("DeviceMSG changes after the command:")
             for path, (before, after) in sorted(self.device_msg_changes.items()):
@@ -107,7 +118,7 @@ async def probe(
     port: int = 1883,
     payload: dict[str, Any] | None = None,
     encoding: str = "auto",
-    settle: float = 3.0,
+    settle: float = 6.0,
     timeout: float = 8.0,
     out: Path | None = None,
 ) -> ProbeResult:
@@ -162,7 +173,10 @@ async def probe(
                     continue
                 if parsed.side == "app":
                     if phase == "collect":
-                        result.app_side_seen.append((parsed.leaf, value))
+                        if parsed.leaf == command and value == body:
+                            result.echoed = True
+                        else:
+                            result.app_side_seen.append((parsed.leaf, value))
                     continue
                 seen_encodings[parsed.leaf] = enc
                 if parsed.leaf == "DeviceMSG" and isinstance(value, dict):

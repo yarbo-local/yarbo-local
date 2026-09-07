@@ -16,6 +16,8 @@ what they have observed from the robot (see :func:`observed_encoding`).
 
 from __future__ import annotations
 
+import base64
+import binascii
 import json
 from typing import Any, Literal
 import zlib
@@ -108,3 +110,31 @@ def flatten(value: Any, prefix: str = "") -> dict[str, Any]:
     else:
         out[prefix or "$"] = value
     return out
+
+
+def decode_blob(value: Any) -> tuple[Any, str] | None:  # noqa: PLR0911 - each return is a distinct verdict
+    """Decode a ``data`` field that carries JSON one more level down.
+
+    Firmware 3.14 returns ``get_map`` and ``get_all_map_backup`` payloads as a
+    base64 string of zlib-compressed JSON inside the already-decoded reply, and
+    some replies carry a JSON string. Returns the inner value and a label
+    (``"b64zlib"`` or ``"jsonstr"``), or None when ``value`` is not a blob.
+    """
+    if not isinstance(value, str) or not value:
+        return None
+    text = value.strip()
+    if text[:1] in "{[":
+        try:
+            return json.loads(text), "jsonstr"
+        except json.JSONDecodeError:
+            return None
+    try:
+        raw = base64.b64decode(text, validate=True)
+    except (binascii.Error, ValueError):
+        return None
+    if not looks_zlib(raw):
+        return None
+    try:
+        return json.loads(zlib.decompress(raw).decode("utf-8")), "b64zlib"
+    except (zlib.error, UnicodeDecodeError, json.JSONDecodeError):
+        return None

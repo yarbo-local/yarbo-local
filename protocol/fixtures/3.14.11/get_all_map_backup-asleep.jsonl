@@ -1,0 +1,4 @@
+{"t":1788809613.672,"phase":"collect","topic":"snowbot/SN-7814df9d/app/get_all_map_backup","enc":"zlib","payload":{}}
+{"t":1788809613.686,"phase":"collect","topic":"snowbot/SN-7814df9d/device/data_feedback","enc":"zlib","payload":{"data":"eNqlz8EKwjAQBNBfkT330E022U1vfoNHkRJthKJVsa0X8d8tSGkOguCeZ3jMbJ/QNlDZAtq+juNwrffxcBpvUB3juU8FXGKXoIL1FK028ZEaKGBou9QPsZtazhjvhVx4FR/JKCQUtEyzhP9L6AiZeJaIvvwb7uNvClmEp13eLpbRWSSyWPi/xRwcerNYpcoik1k2qCxrc0tUlqHcYpWFLre8yip9bjmNJYFzi1SWyGTt3jujODA=","msg":"Map backups's id and name have been retrieved successfully. Here is the list of available backups: [JSON data].","state":0,"topic":"get_all_map_backup"}}
+{"t":1788809615.605,"phase":"collect","topic":"snowbot/SN-7814df9d/device/heart_beat","enc":"json","payload":{"working_state":0}}
+{"t":1788809620.634,"phase":"collect","topic":"snowbot/SN-7814df9d/device/heart_beat","enc":"json","payload":{"working_state":0}}

@@ -1,4 +1,7 @@
-from yarbo_local.redact import Redactor, _nmea_checksum
+import json
+from pathlib import Path
+
+from yarbo_local.redact import Redactor, _nmea_checksum, redact_file
 
 
 def test_serial_token_is_stable_within_capture() -> None:
@@ -47,3 +50,62 @@ def test_value_walker_shifts_coordinates_and_drops_secrets() -> None:
     assert out["wifi"] == {"ssid": "REDACTED", "password": "REDACTED", "signal": -50}
     assert out["zero"] == {"latitude": 0, "longitude": 0}
     assert out["list"] == [{"lat": 11.0, "lon": 21.0}]
+
+
+def test_identifying_keys_from_real_snapshot_are_dropped() -> None:
+    r = Redactor(salt="fixed")
+    out = r.redact_value(
+        {
+            "lat_lon_hight": "42.3 -71.5 88.1",
+            "net_module_status": {"lte_iccid": "8943010352", "lte_rssi": 0},
+            "HeadSerialMsg": {"head_sn": "ABC"},
+            "halow_status": {"ssid": "DC_123", "strength": -43},
+        }
+    )
+    assert out["lat_lon_hight"] == "REDACTED"
+    assert out["net_module_status"] == {"lte_iccid": "REDACTED", "lte_rssi": 0}
+    assert out["HeadSerialMsg"] == {"head_sn": "REDACTED"}
+    assert out["halow_status"] == {"ssid": "REDACTED", "strength": -43}
+
+
+def test_redact_file_roundtrip(tmp_path: Path) -> None:
+    src = tmp_path / "in.jsonl"
+    src.write_text(
+        json.dumps(
+            {
+                "topic": "snowbot/2440011234567890/device/data_feedback",
+                "payload": {
+                    "data": {"ref": {"latitude": 48.1, "longitude": 11.5}, "sn": "2440011234567890"}
+                },
+            }
+        )
+        + "\n"
+    )
+    dst = tmp_path / "out.jsonl"
+    assert redact_file(src, dst, salt="s") == 1
+    rec = json.loads(dst.read_text())
+    assert "2440011234567890" not in dst.read_text()
+    assert rec["topic"].startswith("snowbot/SN-")
+    assert rec["payload"]["data"]["ref"]["latitude"] != 48.1
+
+
+def test_gga_without_checksum_and_camelcase_and_nested_json_string() -> None:
+    r = Redactor(salt="fixed", lat_offset=1.0, lon_offset=1.0)
+    out = r.redact_value(
+        {
+            "modebase_info": {
+                "BaseName": "DC_123",
+                "ModeBase": json.dumps({"latitude": 48.1, "longitude": 11.5, "h": 1}),
+            },
+            "rtk_base_data": {
+                "base": {"gngga": "$GNGGA,193452.00,4807.0380,N,01131.0000,E,7,30,0.5,8\\r\\n"}
+            },
+        }
+    )
+    assert out["modebase_info"]["BaseName"] == "REDACTED"
+    inner = json.loads(out["modebase_info"]["ModeBase"])
+    assert inner == {"latitude": 49.1, "longitude": 12.5, "h": 1}
+    gga = out["rtk_base_data"]["base"]["gngga"]
+    assert "4807.0380" not in gga
+    assert "01131.0000" not in gga
+    assert "*" not in gga

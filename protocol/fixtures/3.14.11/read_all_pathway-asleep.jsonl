@@ -1,0 +1,4 @@
+{"t":1788809595.245,"phase":"collect","topic":"snowbot/SN-7814df9d/app/read_all_pathway","enc":"zlib","payload":{}}
+{"t":1788809595.262,"phase":"collect","topic":"snowbot/SN-7814df9d/device/data_feedback","enc":"json","payload":{"data":{"data":[]},"msg":"","state":0,"topic":"read_all_pathway"}}
+{"t":1788809595.517,"phase":"collect","topic":"snowbot/SN-7814df9d/device/heart_beat","enc":"json","payload":{"working_state":0}}
+{"t":1788809600.539,"phase":"collect","topic":"snowbot/SN-7814df9d/device/heart_beat","enc":"json","payload":{"working_state":0}}

@@ -1,0 +1,4 @@
+{"t":1788809567.655,"phase":"collect","topic":"snowbot/SN-7814df9d/app/read_gps_ref","enc":"zlib","payload":{}}
+{"t":1788809567.672,"phase":"collect","topic":"snowbot/SN-7814df9d/device/data_feedback","enc":"zlib","payload":{"data":{"hgt":87.6729965209961,"lat_lon_hight":"REDACTED","ref":{"latitude":50.500636943,"longitude":24.070391069666655},"rtkFixType":1},"msg":"","state":0,"topic":"read_gps_ref"}}
+{"t":1788809570.43,"phase":"collect","topic":"snowbot/SN-7814df9d/device/heart_beat","enc":"json","payload":{"working_state":0}}
+{"t":1788809575.457,"phase":"collect","topic":"snowbot/SN-7814df9d/device/heart_beat","enc":"json","payload":{"working_state":0}}

@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 import sys
 
-from . import __version__, capture, discover, dump, probe
+from . import __version__, capture, discover, dump, probe, redact
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -35,7 +35,12 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--port", type=int, default=1883)
     p.add_argument("--payload", help="JSON object overriding the default payload")
     p.add_argument("--encoding", choices=["auto", "zlib", "json"], default="auto")
-    p.add_argument("--settle", type=float, default=3.0, help="seconds to observe before sending")
+    p.add_argument(
+        "--settle",
+        type=float,
+        default=6.0,
+        help="seconds to observe before sending; asleep heartbeats arrive every ~5 s",
+    )
     p.add_argument("--timeout", type=float, default=8.0, help="seconds to collect after sending")
     p.add_argument("--out", type=Path, help="append the whole probe window to this JSONL")
 
@@ -44,6 +49,11 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--port", type=int, default=1883)
     p.add_argument("--wait", type=float, default=6.0, help="seconds to listen per open host")
     p.add_argument("--connect-timeout", type=float, default=0.6)
+
+    p = sub.add_parser("redact", help="re-redact an existing JSONL capture into a fixture")
+    p.add_argument("src", type=Path)
+    p.add_argument("dst", type=Path)
+    p.add_argument("--salt", help="shared salt so several files from one robot get the same tokens")
 
     p = sub.add_parser("dump", help="summarise a JSONL capture")
     p.add_argument("file", type=Path)
@@ -97,6 +107,9 @@ def main(argv: list[str] | None = None) -> int:
                 print("no hosts with an open MQTT port")
             for hit in hits:
                 print(hit.render())
+        elif args.cmd == "redact":
+            count = redact.redact_file(args.src, args.dst, salt=args.salt)
+            print(f"wrote {count} records to {args.dst}", file=sys.stderr)
         elif args.cmd == "dump":
             print(dump.summarise(args.file).render(keys=args.keys, app=args.app))
     except KeyboardInterrupt:

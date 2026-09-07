@@ -1,0 +1,3 @@
+{"t":1788809576.896,"phase":"collect","topic":"snowbot/SN-7814df9d/app/get_plan_feedback","enc":"zlib","payload":{}}
+{"t":1788809576.93,"phase":"collect","topic":"snowbot/SN-7814df9d/device/data_feedback","enc":"json","payload":{"data":"","msg":"no plan working","state":-1,"topic":"get_plan_feedback"}}
+{"t":1788809580.485,"phase":"collect","topic":"snowbot/SN-7814df9d/device/heart_beat","enc":"json","payload":{"working_state":0}}

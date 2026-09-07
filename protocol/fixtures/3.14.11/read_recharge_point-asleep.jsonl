@@ -1,0 +1,5 @@
+{"t":1788809535.299,"phase":"settle","topic":"snowbot/SN-7814df9d/device/heart_beat","enc":"json","payload":{"working_state":0}}
+{"t":1788809536.031,"phase":"collect","topic":"snowbot/SN-7814df9d/app/read_recharge_point","enc":"zlib","payload":{}}
+{"t":1788809536.047,"phase":"collect","topic":"snowbot/SN-7814df9d/device/data_feedback","enc":"zlib","payload":{"data":{"chargingPoint":{"phi":0.0,"x":-0.054,"y":-0.207},"enable":true,"hasChargingStation":1,"id":1,"name":"","startPoint":{"phi":2.906,"x":-1.026,"y":0.027},"straightPhi":2.9055442810058594},"msg":"","state":0,"topic":"read_recharge_point"}}
+{"t":1788809540.323,"phase":"collect","topic":"snowbot/SN-7814df9d/device/heart_beat","enc":"json","payload":{"working_state":0}}
+{"t":1788809545.342,"phase":"collect","topic":"snowbot/SN-7814df9d/device/heart_beat","enc":"json","payload":{"working_state":0}}

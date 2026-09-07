@@ -2,12 +2,12 @@
 # Topic: snowbot/{sn}/app/<name>. Replies arrive on snowbot/{sn}/device/data_feedback
 # as {"topic": "<name>", "state": 0, "msg": "...", "data": ...} unless ack says otherwise.
 #
-# status: verified | candidate      (see README.md; nothing here is verified yet)
+# status: verified | candidate      (see README.md for the evidence rule)
 # ack:    data_feedback | plan_feedback | recharge_feedback | none
 # risk:   safe | confirm             (forbidden commands are listed at the bottom, unregistered)
 # source: where the knowledge came from, until a fixture replaces it.
 
-version: 0
+version: 1
 firmware_note: >
   Payloads are zlib-compressed JSON on firmware >= 3.9.0 and plain JSON before that.
   heart_beat is always plain. Sending the wrong encoding is dropped silently.
@@ -19,7 +19,11 @@ commands:
     controller: false
     awake: false
     risk: safe
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/get_device_msg-asleep.jsonl
+    verified_notes: >
+      Answers while asleep, 52 ms. 52 top-level objects vs 29 in the push. Same via the base station endpoint.
     notes: Reply data is the full DeviceMSG snapshot, including sub-objects the push omits.
     source: vendor SDK, python-yarbo capture 2026-03-06
 
@@ -28,7 +32,11 @@ commands:
     ack: data_feedback
     controller: false
     risk: safe
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/get_state_msg-asleep.jsonl
+    verified_notes: >
+      Reply data is {value: [33 ints]}, semantics unknown.
     source: steves2j bridge headers
 
   get_controller:
@@ -45,7 +53,11 @@ commands:
     ack: none
     controller: unknown
     risk: safe
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/set_working_state-wake.jsonl
+    verified_notes: >
+      No ack. DeviceMSG streams at 1 Hz within seconds; heart_beat flips to 1 every 2 s. No controller needed. Robot sleeps again ~200 s after the last stimulus.
     notes: >
       What the vendor integration sends to wake the robot over the cloud relay.
       Never captured on the LAN. Phase 0 question 2.
@@ -57,7 +69,11 @@ commands:
     controller: false
     awake: true
     risk: safe
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/read_all_plan-asleep.jsonl
+    verified_notes: >
+      Answers while asleep in 44 ms. Reply {data: [...]}.
     notes: Reply data.data is a list of {id, name, areaIds, enable_self_order}. Often unanswered when asleep.
     source: vendor SDK, jtubb fork
 
@@ -66,7 +82,11 @@ commands:
     ack: data_feedback
     controller: false
     risk: safe
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/read_gps_ref-asleep.jsonl
+    verified_notes: >
+      Answers while asleep. data: {ref:{latitude,longitude}, hgt, rtkFixType, lat_lon_hight}.
     notes: Reply data has ref.latitude, ref.longitude, rtkFixType (1 = fixed).
     source: vendor SDK
 
@@ -75,7 +95,11 @@ commands:
     ack: data_feedback
     controller: false
     risk: safe
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/get_map-asleep.jsonl
+    verified_notes: >
+      Answers while asleep in 43 ms. On 3.14.11 data is a base64 string of zlib JSON. Keys: allchargingData, chargingData, areas, nogozones, novisionzones, elec_fence, pathways, sidewalks, deadends, mul_points.
     notes: >
       Reply data is a JSON object, a JSON string, or base64 zlib depending on firmware.
       Object keys: areas, nogozones, pathways, sidewalks, elec_fence, deadends,
@@ -84,10 +108,14 @@ commands:
 
   get_plan_feedback:
     payload: {}
-    ack: plan_feedback
+    ack: data_feedback   # when idle; plan_feedback push while a plan runs is still unverified
     controller: false
     risk: safe
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/get_plan_feedback-idle.jsonl
+    verified_notes: >
+      With no plan running it replies on data_feedback with state -1 and msg 'no plan working', not on plan_feedback.
     source: steves2j bridge headers, jtubb fork
 
   start_plan:
@@ -238,32 +266,48 @@ commands:
     ack: data_feedback
     controller: false
     risk: safe
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/read_all_nogozone-asleep.jsonl
+    verified_notes: >
+      Answers while asleep. Reply {data: [...]}.
     source: jtubb fork
   read_all_clean_area:
     payload: {}
     ack: data_feedback
     controller: false
     risk: safe
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/read_all_clean_area-asleep.jsonl
+    verified_notes: >
+      Answers while asleep. Reply {data: [...]}.
     source: jtubb fork
   read_all_pathway:
     payload: {}
     ack: data_feedback
     controller: false
     risk: safe
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/read_all_pathway-asleep.jsonl
+    verified_notes: >
+      Answers while asleep. Reply {data: [...]}.
     source: bridge headers
   read_all_sidewalk:
     payload: {}
     ack: data_feedback
     controller: false
     risk: safe
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/read_all_sidewalk-asleep.jsonl
+    verified_notes: >
+      Answers while asleep. Reply {data: [...]}.
     source: bridge headers
 
   save_nogozone:
-    payload: {id?: int, name: str, type: 0, enable: bool, range: [{x, y, phi}], ref: {latitude, longitude}, trimming_edges: []}
+    payload: {id: int (omit to create), name: str, type: 0, enable: bool, range: [{x, y, phi}], ref: {latitude, longitude}, trimming_edges: []}
     ack: data_feedback
     controller: true
     risk: confirm
@@ -271,14 +315,14 @@ commands:
     notes: Full record every time; omit id to create. First vertex repeated to close the polygon.
     source: steves2j editor, jtubb fork
   save_pathway:
-    payload: {id?: int, name: str, range: [{x, y, phi}], ref: {latitude, longitude}, connectids: [], leaf_piles: [], snowPiles: [], trimming_edges: []}
+    payload: {id: int (omit to create), name: str, range: [{x, y, phi}], ref: {latitude, longitude}, connectids: [], leaf_piles: [], snowPiles: [], trimming_edges: []}
     ack: data_feedback
     controller: true
     risk: confirm
     status: candidate
     source: steves2j editor
   save_sidewalk:
-    payload: {id?: int, name: str, head_type: 99, range: [{x, y, phi}], ref: {latitude, longitude}, connectids: [], snowPiles: [], trimming_edges: [{id, ref, range}]}
+    payload: {id: int (omit to create), name: str, head_type: 99, range: [{x, y, phi}], ref: {latitude, longitude}, connectids: [], snowPiles: [], trimming_edges: [{id, ref, range}]}
     ack: data_feedback
     controller: true
     risk: confirm
@@ -334,6 +378,52 @@ commands:
     risk: confirm
     status: candidate
     source: bridge headers
+
+  read_global_params:
+    payload: {id: 1}
+    ack: data_feedback
+    controller: false
+    risk: safe
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/read_global_params-id1.jsonl
+    verified_notes: >
+      Requires {id: 1}; with {} the reply is state -2 (fixtures/3.14.11/read_global_params-no-id-error.jsonl).
+      Returns ~60 global settings: battery cut-offs, plan_speed, max_vel, enable_elec_fence, chute limits, rain thresholds.
+    source: steves2j cached sample
+
+  read_schedules:
+    payload: {}
+    ack: data_feedback
+    controller: false
+    risk: safe
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/read_schedules-asleep.jsonl
+    verified_notes: "Reply data is a bare list, not {data: [...]}."
+    source: bridge headers
+
+  get_all_map_backup:
+    payload: {}
+    ack: data_feedback
+    controller: false
+    risk: safe
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/get_all_map_backup-asleep.jsonl
+    verified_notes: "data is a base64 string of zlib JSON, same envelope as get_map."
+    source: bridge headers
+
+  read_recharge_point:
+    payload: {}
+    ack: data_feedback
+    controller: false
+    risk: safe
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/read_recharge_point-asleep.jsonl
+    verified_notes: "Dock record {chargingPoint{x,y,phi}, startPoint{x,y,phi}, straightPhi (radians), hasChargingStation, enable, id, name}."
+    source: python-yarbo
 
 # Never registered. Listed so a reviewer sees the line being crossed.
 forbidden:

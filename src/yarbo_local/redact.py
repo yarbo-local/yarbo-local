@@ -20,17 +20,45 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 import hashlib
+import json
+from pathlib import Path
 import re
 import secrets
 from typing import Any
 
 _MAC_RE = re.compile(r"\b(?:[0-9A-Fa-f]{1,2}[:-]){5}[0-9A-Fa-f]{1,2}\b")
 _IPV4_RE = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
-_GGA_RE = re.compile(r"\$(G[NP]GGA),[^*]*\*[0-9A-Fa-f]{2}")
+_GGA_RE = re.compile(r"\$G[NP]GGA,[^*\r\n\"]*(?:\*[0-9A-Fa-f]{2})?")
 
 _LAT_KEYS = frozenset({"latitude", "lat", "lan"})
 _LON_KEYS = frozenset({"longitude", "lon", "lng"})
-_DROP_KEYS = frozenset({"ssid", "password", "psk", "base_name", "name_of_wifi"})
+_DROP_KEYS = frozenset(
+    {
+        "ssid",
+        "password",
+        "psk",
+        "base_name",
+        "basename",  # modebase_info.BaseName
+        "name_of_wifi",
+        "lat_lon_hight",  # read_gps_ref: "lat lon height" as one string
+        "lte_iccid",
+        "iccid",
+        "imei",
+        "head_sn",
+        "body_sn",
+    }
+)
+
+
+def _json_string(text: str) -> Any | None:
+    """Parse ``text`` when it is a JSON object or array, else None."""
+    stripped = text.strip()
+    if stripped[:1] not in "{[":
+        return None
+    try:
+        return json.loads(stripped)
+    except json.JSONDecodeError:
+        return None
 
 
 def _nmea_checksum(body: str) -> str:
@@ -107,6 +135,8 @@ class Redactor:
             fields[4] = _decimal_to_dm(new_lon, 3)
             fields[5] = "W" if new_lon < 0 else "E"
         new_body = ",".join(fields)
+        if star <= 0:
+            return f"${new_body}"  # sentence arrived without a checksum; keep it that way
         return f"${new_body}*{_nmea_checksum(new_body)}"
 
     # -- generic walkers ---------------------------------------------------
@@ -145,5 +175,48 @@ class Redactor:
         if isinstance(value, list):
             return [self.redact_value(v, key) for v in value]
         if isinstance(value, str):
+            nested = _json_string(value)
+            if nested is not None:
+                # A JSON document carried as a string (modebase_info.ModeBase does this).
+                return json.dumps(self.redact_value(nested), separators=(",", ":"))
             return self.redact_text(value)
         return value
+
+
+def redactor_for_salt(salt: str | None) -> Redactor:
+    """A Redactor whose coordinate offsets are derived from ``salt``.
+
+    With a shared salt, several captures from one robot get the same serial
+    token and the same geometric shift, so they stay consistent as a set.
+    """
+    if salt is None:
+        return Redactor()
+    digest = hashlib.sha256(f"offsets:{salt}".encode()).digest()
+    lat = int.from_bytes(digest[:4], "big") % 120_000 / 1000 - 60.0
+    lon = int.from_bytes(digest[4:8], "big") % 300_000 / 1000 - 150.0
+    return Redactor(salt=salt, lat_offset=lat, lon_offset=lon)
+
+
+def redact_file(src: Path, dst: Path, *, salt: str | None = None) -> int:
+    """Rewrite a capture JSONL with every record redacted. Returns the record count."""
+    redactor = redactor_for_salt(salt)
+    # First pass: learn serials from topics so replacements inside payload strings work.
+    with src.open(encoding="utf-8") as fh:
+        for line in fh:
+            if line.strip():
+                topic = json.loads(line).get("topic", "")
+                parts = str(topic).split("/")
+                if len(parts) >= 2 and parts[0] == "snowbot" and parts[1] != "+":
+                    redactor.register_serial(parts[1])
+    count = 0
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    with src.open(encoding="utf-8") as fin, dst.open("w", encoding="utf-8") as fout:
+        for line in fin:
+            if not line.strip():
+                continue
+            rec = json.loads(line)
+            rec["topic"] = redactor.redact_topic(str(rec.get("topic", "")))
+            rec["payload"] = redactor.redact_value(rec.get("payload"))
+            fout.write(json.dumps(rec, separators=(",", ":")) + "\n")
+            count += 1
+    return count

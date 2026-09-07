@@ -1,0 +1,9 @@
+{"t":1788809454.973,"phase":"settle","topic":"snowbot/SN-7814df9d/device/heart_beat","enc":"json","payload":{"working_state":0}}
+{"t":1788809456.239,"phase":"collect","topic":"snowbot/SN-7814df9d/app/get_map","enc":"zlib","payload":{"width":256,"height":256}}
+{"t":1788809456.262,"phase":"collect","topic":"snowbot/SN-7814df9d/device/data_feedback","enc":"zlib","payload":{"data":"eNrVj9FOwzAMRf/Fz6FKq2ZseWUfMIlHhCbTmCYiS6rEY4yq/07WdYh9Ak++17Z8fEdA7zuLqXeh3yIj6JcRbo1ddIFBjzBYB1pWUsAX6IciVCvgPMtGPk4CKOCbJ9CcjiTAYn5aTjwzsosBdC3AmbkEPJRNAAGZMfE9pKk2cnXF1JVsVjOmAJsLJXNC11ve3TaVattmXUup1mrTTq8CMBHmEqLI+1j/N5UAQ2gomCUXeer27xQ6uvrD0e+HC26Zh9jH7xjo1366XJ790xqQ7QnPi8vO0An9x2ynH497oe8=","msg":"","state":0,"topic":"get_map"}}
+{"t":1788809459.99,"phase":"collect","topic":"snowbot/SN-7814df9d/device/heart_beat","enc":"json","payload":{"working_state":0}}
+{"t":1788809465.021,"phase":"collect","topic":"snowbot/SN-7814df9d/device/heart_beat","enc":"json","payload":{"working_state":0}}
+{"t":1788809470.032,"phase":"collect","topic":"snowbot/SN-7814df9d/device/heart_beat","enc":"json","payload":{"working_state":0}}
+{"t":1788809475.049,"phase":"collect","topic":"snowbot/SN-7814df9d/device/heart_beat","enc":"json","payload":{"working_state":0}}
+{"t":1788809480.087,"phase":"collect","topic":"snowbot/SN-7814df9d/device/heart_beat","enc":"json","payload":{"working_state":0}}
+{"t":1788809485.098,"phase":"collect","topic":"snowbot/SN-7814df9d/device/heart_beat","enc":"json","payload":{"working_state":0}}
