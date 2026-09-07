@@ -66,6 +66,17 @@ Topology as observed with the network controller (UniFi) alongside ARP:
 
 **Defect, not a design choice to accept.** A device that takes a static address inside the network's DHCP pool without asking, and appears only behind a bridge MAC that no controller can attribute, is a bad network citizen. It will collide with a lease sooner or later, it cannot be reserved, renamed or firewalled by MAC in the controller, and it has no management page to configure otherwise. The integration must discover the relay by probing the subnet, never by asking the controller, and the README must tell users to exclude the base station's address from their DHCP pool or move the whole Yarbo association to an isolated VLAN.
 
+## 10b. Living on a VLAN
+
+After moving the rover to an isolated VLAN with the host running the tooling on a different one:
+
+- Reads and the wake-up work across the firewall exactly as on the flat LAN, 34 ms for a snapshot.
+- Home Assistant's built-in discovery cannot fire: `dhcp` and `zeroconf` listen on HA's own segment, and the robot's DHCP happens on the other VLAN. The robot also advertises nothing over mDNS. Active subnet scanning is the only discovery that works on a segmented network, so it is the primary path in the design, not a fallback.
+- The gateway registers the robot's DHCP hostname in local DNS, so `yarbo.localdomain` resolved to the new address the moment the lease moved. A DNS name is a better anchor than a reservation for a single robot. The hostname is a fixed firmware string, so two robots would collide on it.
+- The base station kept its Default-LAN address, because its Ethernet enters through an access point port that cannot be assigned a VLAN. It never DHCPs, so it also has no DNS name. Until it is cabled to a switch port, it continues to relay the rover's full telemetry on the old network, and the isolation covers the rover's own radio only.
+
+Resolution order the library should use when a connection drops: last known address, then configured DNS name, then subnet scan for the entry's serial.
+
 ## 11. Frame conventions
 
 Not yet measured. Data points so far: `CombinedOdom` gives x 14.25, y 2.94, phi -0.20 while docked; the dock's `chargingPoint` is near the origin and its `straightPhi` is 2.91, so `phi` is radians. RTK heading in `RTKMSG.heading` is degrees. `RTKMSG.status` was `"1"` asleep and `"5"` awake, both strings.

@@ -27,6 +27,11 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--filter", help="MQTT subscription filter (default: snowbot/+/#)")
     p.add_argument("--redact", action="store_true", help="redact serial, MAC, IP, coordinates")
     p.add_argument("--stats-every", type=float, default=15.0)
+    p.add_argument(
+        "--fallback-scan",
+        metavar="CIDR",
+        help="if the host does not answer, scan this subnet for a broker and use the first hit",
+    )
 
     p = sub.add_parser("probe", help="send one allowlisted command and show what comes back")
     p.add_argument("host")
@@ -43,6 +48,11 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--timeout", type=float, default=8.0, help="seconds to collect after sending")
     p.add_argument("--out", type=Path, help="append the whole probe window to this JSONL")
+    p.add_argument(
+        "--fallback-scan",
+        metavar="CIDR",
+        help="if the host does not answer, scan this subnet for a broker with this serial",
+    )
 
     p = sub.add_parser("discover", help="scan hosts or a CIDR for brokers carrying snowbot traffic")
     p.add_argument("hosts", help="host, comma list, or CIDR such as 192.168.40.0/24")
@@ -62,9 +72,28 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _resolve_host(host: str, port: int, fallback: str | None, serial: str | None) -> str:
+    """Return ``host`` if its broker port answers, else the first scan hit (matching serial)."""
+    if not fallback:
+        return host
+    if asyncio.run(discover._tcp_open(host, port, 1.5)):
+        return host
+    print(f"{host}:{port} not answering; scanning {fallback}", file=sys.stderr)
+    hits = asyncio.run(discover.discover(discover.expand(fallback), port=port, wait=6.0))
+    for hit in hits:
+        if hit.serials and (serial is None or serial in hit.serials):
+            print(f"using {hit.host} ({hit.serials})", file=sys.stderr)
+            return hit.host
+    raise RuntimeError(f"no broker found on {fallback}")
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
     try:
+        if getattr(args, "fallback_scan", None):
+            args.host = _resolve_host(
+                args.host, args.port, args.fallback_scan, getattr(args, "serial", None)
+            )
         if args.cmd == "sniff":
             stats = asyncio.run(
                 capture.sniff(
