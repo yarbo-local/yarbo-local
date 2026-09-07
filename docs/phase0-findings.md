@@ -57,6 +57,15 @@ Not tested. `StateMSG.machine_controller` reads 1 while idle with no app connect
 
 See 1. The relay is reachable and answers every command tried. The earlier belief that it was unreachable from the LAN is not what this site shows today.
 
+Topology as observed with the network controller (UniFi) alongside ARP:
+
+- The controller knows one Yarbo client: the physical Wi-Fi radio, hostname `YARBO`, associated to a 5 GHz AP, holding the DHCP lease for the rover's address.
+- The base station's address is never leased. It is self-assigned inside the LAN's DHCP pool and is reachable only behind a locally administered bridge MAC that never associates with anything. The controller therefore has no record of it at all.
+- ARP for the rover's address alternates between the physical radio MAC and the bridge MAC depending on which path answers first. The base station's address only ever answers from the bridge MAC. The base station's heartbeat also arrives faster.
+- Both hosts present identical Ubuntu SSH banners and identical broker contents.
+
+**Defect, not a design choice to accept.** A device that takes a static address inside the network's DHCP pool without asking, and appears only behind a bridge MAC that no controller can attribute, is a bad network citizen. It will collide with a lease sooner or later, it cannot be reserved, renamed or firewalled by MAC in the controller, and it has no management page to configure otherwise. The integration must discover the relay by probing the subnet, never by asking the controller, and the README must tell users to exclude the base station's address from their DHCP pool or move the whole Yarbo association to an isolated VLAN.
+
 ## 11. Frame conventions
 
 Not yet measured. Data points so far: `CombinedOdom` gives x 14.25, y 2.94, phi -0.20 while docked; the dock's `chargingPoint` is near the origin and its `straightPhi` is 2.91, so `phi` is radians. RTK heading in `RTKMSG.heading` is degrees. `RTKMSG.status` was `"1"` asleep and `"5"` awake, both strings.
