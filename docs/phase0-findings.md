@@ -83,7 +83,12 @@ Not yet measured. Data points so far: `CombinedOdom` gives x 14.25, y 2.94, phi 
 
 ## 12. Broker behaviour
 
-The broker echoes app-side publishes to other subscribers: every probe saw its own command come back on `snowbot/{sn}/app/<cmd>`. That means the phone app's commands are observable, which the Studio's app-observer pane depends on. Port 8883 is open on both hosts; not yet tested. Retained messages and LWT not tested.
+The broker echoes app-side publishes to other subscribers: every probe saw its own command come back on `snowbot/{sn}/app/<cmd>`. That means the phone app's commands are observable, which the Studio's app-observer pane depends on.
+
+- **TLS on 8883 works, anonymously.** The certificate is EMQX's stock sample: subject `C=CN, ST=hangzhou, O=EMQ, CN=Server`, issuer `EMQ RootCA`, valid 2020 to 2030, self-signed, TLS 1.3 with AES-256-GCM. It encrypts the hop but authenticates nothing, and every robot almost certainly presents the same certificate. The library can offer "encrypt only" on 8883 with verification off; it must not pretend that is authentication.
+- **Retained messages:** the robot publishes nothing retained, so a fresh subscriber learns nothing until the next heartbeat. The broker itself honours retained publishes on other topics.
+- **Last will:** the broker delivers a will after an abrupt disconnect. Useful for our own client's presence, useless for the robot's, which stays heartbeat-based.
+- **Firmware version:** the broker is EMQX; the rover's snapshot shows `beam.smp` among top processes, consistent with an Erlang EMQX running on the robot itself.
 
 ## Values settled
 
