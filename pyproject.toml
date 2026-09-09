@@ -28,12 +28,16 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+studio = [
+  "aiohttp>=3.10,<4",
+]
 dev = [
   "pytest>=8.3",
   "pytest-asyncio>=0.24",
   "ruff>=0.6",
   "mypy>=1.11",
   "types-pyyaml>=6.0",
+  "aiohttp>=3.10,<4",
 ]
 
 [project.scripts]
@@ -76,6 +80,8 @@ ignore = [
 "tests/*" = ["S101", "PLR2004"]
 "src/yarbo_local/probe.py" = ["PLR0912", "PLR0915"]
 "scripts/*" = ["E501", "T201"]
+"src/yarbo_local/studio/server.py" = ["PLR0915"]
+"src/yarbo_local/cli.py" = ["PLR0912", "PLR0915"]
 
 [tool.ruff.lint.isort]
 force-sort-within-sections = true

@@ -15,6 +15,8 @@ Status: **Phase 1, pre-alpha.** Phase 0 validated the protocol on real hardware 
 | `src/yarbo_local/transport.py` | aiomqtt transport plus an in-memory fake for tests. |
 | `src/yarbo_local/simulator.py` | A robot built from fixtures, for tests and for developing without hardware. |
 | `src/yarbo_local/resolve.py` | Address resolution: last address, DNS name, subnet scan. |
+| `src/yarbo_local/fieldmap.py` | Builds `protocol/fields.yaml` from the curated seed and the fixtures. |
+| `src/yarbo_local/studio/` | The Studio: aiohttp server and Lit UI (`docs/studio.md`). |
 | `src/yarbo_local/codec.py` | zlib-or-plain JSON codec with the firmware rule and an observed-encoding fallback. |
 | `src/yarbo_local/capture.py` | `sniff`: subscribe to `snowbot/+/#` and write every message to JSONL, optionally redacted. |
 | `src/yarbo_local/probe.py` | `probe`: send one allowlisted command, show the correlated reply and the telemetry deltas. |
@@ -65,11 +67,12 @@ Rules the session enforces, on purpose:
 - Outbound encoding follows the robot's firmware, or what it has been seen sending, so a robot on 3.9 or later never silently drops a plaintext command.
 - The connection loop never returns on a dropped broker; it backs off with jitter and reconnects.
 
-The same CLI can show what the library sees, and can stand up a fake robot from a fixture for development without hardware:
+The same CLI can show what the library sees, stand up a fake robot from a fixture for development without hardware, and open the Studio, a local web UI for watching the protocol, documenting fields and saving fixtures (see `docs/studio.md`):
 
 ```bash
 uv run yarbo-local status yarbo.localdomain --watch 30
 uv run yarbo-local sim protocol/fixtures/3.14.11/get_device_msg-asleep.jsonl --broker 127.0.0.1
+uv run yarbo-local studio yarbo.localdomain
 ```
 
 ## Can't see the base station in your router or controller?

@@ -1,0 +1,830 @@
+# Curated DeviceMSG semantics: the part of the field map that is knowledge, not
+# inventory. Edit by hand or through the Studio's Knowledge pane; then run
+# scripts/gen_fields.py to regenerate fields.yaml, which merges this with what
+# the fixtures actually show.
+#
+# Keys per path: entity (sensor, binary_sensor, switch, number, light,
+# device_tracker, update, or null), device_class, unit, scale, sentinel,
+# enabled, category, codes (a key in codes.yaml), heads, notes, source.
+# source 'capture' means we confirmed the semantics on our own robot and the
+# path becomes verified in fields.yaml.
+
+version: 1
+fields:
+  BatteryMSG.capacity:
+    entity: sensor
+    device_class: battery
+    unit: '%'
+    enabled: true
+    notes: Vendor SDK rescales 90..95 to 90..100 because the firmware tops out at 95 on some units; ours reads 100
+      at full.
+    source: vendor SDK
+  BatteryMSG.health:
+    entity: sensor
+    unit: '%'
+    enabled: true
+    source: vendor SDK
+  BatteryMSG.voltage:
+    entity: sensor
+    device_class: voltage
+    unit: V
+    scale: 0.001
+    enabled: false
+    notes: Reported in mV (41000 while docked).
+    source: capture
+  BatteryMSG.current:
+    entity: sensor
+    device_class: current
+    unit: A
+    scale: 0.001
+    enabled: false
+    notes: Reported in mA; negative while charging (-300 docked).
+    source: capture
+  BatteryMSG.status:
+    entity: binary_sensor
+    device_class: battery_charging
+    enabled: true
+    codes: BatteryMSG.status
+    notes: 'Vendor rule: > 1 means charging on the wireless dock. Observed 1 while on the wired charger.'
+    source: vendor SDK
+  BatteryMSG.temp_err:
+    entity: binary_sensor
+    device_class: problem
+    enabled: true
+    source: vendor SDK
+  BatteryMSG.heating_status:
+    entity: binary_sensor
+    enabled: false
+    category: diagnostic
+    source: capture
+  BatteryMSG.temperature1:
+    entity: sensor
+    device_class: temperature
+    unit: °C
+    enabled: false
+    category: diagnostic
+    source: vendor SDK
+  BatteryMSG.temperature2:
+    entity: sensor
+    device_class: temperature
+    unit: °C
+    enabled: false
+    category: diagnostic
+    source: vendor SDK
+  BatteryMSG.temperature3:
+    entity: sensor
+    device_class: temperature
+    unit: °C
+    enabled: false
+    category: diagnostic
+    source: vendor SDK
+  BatteryMSG.temperature4:
+    entity: sensor
+    device_class: temperature
+    unit: °C
+    enabled: false
+    category: diagnostic
+    source: vendor SDK
+  BatteryMSG.temperature5:
+    entity: sensor
+    device_class: temperature
+    unit: °C
+    enabled: false
+    category: diagnostic
+    source: vendor SDK
+  BatteryMSG.temperature6:
+    entity: sensor
+    device_class: temperature
+    unit: °C
+    enabled: false
+    category: diagnostic
+    source: vendor SDK
+  StateMSG.working_state:
+    entity: binary_sensor
+    enabled: true
+    codes: heart_beat.working_state
+    notes: 0 asleep, 1 awake. Same field as heart_beat.working_state.
+    source: capture
+  StateMSG.on_going_planning:
+    entity: sensor
+    device_class: enum
+    enabled: true
+    codes: StateMSG.on_going_planning
+    source: vendor SDK
+  StateMSG.planning_paused:
+    entity: sensor
+    device_class: enum
+    enabled: true
+    codes: StateMSG.planning_paused
+    source: vendor SDK
+  StateMSG.on_going_recharging:
+    entity: sensor
+    device_class: enum
+    enabled: true
+    codes: StateMSG.on_going_recharging
+    source: vendor SDK
+  StateMSG.on_going_to_start_point:
+    entity: binary_sensor
+    enabled: false
+    source: community
+  StateMSG.error_code:
+    entity: sensor
+    enabled: true
+    notes: 0 is no error. Non-zero codes are not yet mapped.
+    source: vendor SDK
+  StateMSG.charging_status:
+    entity: binary_sensor
+    device_class: battery_charging
+    enabled: true
+    notes: 'Community rule: 1..3 charging. Observed 0 on the wired charger, so BatteryMSG.status and BodyMsg.recharge_state
+      are the reliable sources.'
+    source: community
+  StateMSG.machine_controller:
+    entity: sensor
+    enabled: false
+    category: diagnostic
+    notes: Reads 1 idle with no app connected. Semantics open (Phase 0 question 9).
+    source: capture
+  StateMSG.car_controller:
+    entity: binary_sensor
+    enabled: false
+    category: diagnostic
+    notes: Manual controller (gamepad) active.
+    source: community
+  StateMSG.person_detect_status:
+    entity: switch
+    enabled: true
+    notes: Read-back for set_person_detect.
+    source: vendor SDK
+  StateMSG.child_lock_status:
+    entity: switch
+    enabled: true
+    notes: Read-back for set_child_lock.
+    source: vendor SDK
+  StateMSG.enable_sound:
+    entity: switch
+    enabled: true
+    notes: Read-back for set_sound_param.enable.
+    source: vendor SDK
+  StateMSG.volume:
+    entity: number
+    unit: '%'
+    scale: 100
+    enabled: true
+    notes: Float 0..1 on the wire; set_sound_param.vol uses the same scale.
+    source: capture
+  StateMSG.robot_follow_state:
+    entity: switch
+    enabled: false
+    notes: Read-back for set_follow_state.
+    source: vendor SDK
+  StateMSG.stuck:
+    entity: binary_sensor
+    device_class: problem
+    enabled: true
+    source: vendor SDK
+  StateMSG.obstacle:
+    entity: binary_sensor
+    enabled: false
+    source: vendor SDK
+  StateMSG.obstacle_toggle:
+    entity: switch
+    enabled: false
+    notes: Candidate read-back for set_map_obstacle_switch.
+    source: capture
+  StateMSG.lidar_switch:
+    entity: switch
+    enabled: false
+    category: config
+    source: capture
+  StateMSG.lidar_state:
+    entity: binary_sensor
+    enabled: false
+    category: diagnostic
+    source: capture
+  StateMSG.lidar_smudge:
+    entity: binary_sensor
+    device_class: problem
+    enabled: false
+    source: capture
+  StateMSG.en_state_led:
+    entity: switch
+    enabled: false
+    category: config
+    source: capture
+  StateMSG.en_warn_led:
+    entity: switch
+    enabled: false
+    category: config
+    source: capture
+  StateMSG.sentry_mode_status:
+    entity: binary_sensor
+    enabled: false
+    source: capture
+  StateMSG.shipping_mode:
+    entity: binary_sensor
+    enabled: false
+    category: diagnostic
+    source: capture
+  StateMSG.is_pedestrian:
+    entity: binary_sensor
+    device_class: occupancy
+    enabled: true
+    source: capture
+  StateMSG.is_animal:
+    entity: binary_sensor
+    device_class: occupancy
+    enabled: true
+    source: capture
+  StateMSG.schedule_state:
+    entity: sensor
+    enabled: false
+    category: diagnostic
+    source: capture
+  StateMSG.schedule_id:
+    entity: sensor
+    enabled: false
+    category: diagnostic
+    source: capture
+  StateMSG.self_check_status:
+    entity: sensor
+    enabled: false
+    category: diagnostic
+    source: capture
+  StateMSG.need_back_to_ds:
+    entity: binary_sensor
+    enabled: false
+    source: capture
+  StateMSG.voice_locale:
+    entity: sensor
+    enabled: false
+    category: diagnostic
+    source: capture
+  RTKMSG.status:
+    entity: sensor
+    device_class: enum
+    enabled: true
+    codes: RTKMSG.status
+    notes: String on the wire. Observed '1' asleep and '5' awake.
+    source: vendor SDK
+  RTKMSG.statush:
+    entity: sensor
+    enabled: false
+    category: diagnostic
+    notes: Heading solution status, string.
+    source: capture
+  RTKMSG.sat_num:
+    entity: sensor
+    enabled: false
+    category: diagnostic
+    source: vendor SDK
+  RTKMSG.heading:
+    entity: sensor
+    unit: °
+    enabled: false
+    notes: Degrees, compass.
+    source: capture
+  RTKMSG.heading_status:
+    entity: sensor
+    enabled: false
+    category: diagnostic
+    source: community
+  RTKMSG.heading_dop:
+    entity: sensor
+    enabled: false
+    category: diagnostic
+    source: community
+  RTKMSG.gga_atn_dis:
+    entity: sensor
+    unit: m
+    enabled: false
+    category: diagnostic
+    notes: Antenna baseline distance.
+    source: community
+  CombinedOdom.x:
+    entity: sensor
+    unit: m
+    enabled: false
+    notes: Site frame, +x west per vendor conversion. Frame not yet verified by movement.
+    source: vendor SDK
+  CombinedOdom.y:
+    entity: sensor
+    unit: m
+    enabled: false
+    notes: Site frame, +y north.
+    source: vendor SDK
+  CombinedOdom.phi:
+    entity: sensor
+    unit: rad
+    enabled: false
+    notes: Radians; dock straightPhi is in the same unit.
+    source: capture
+  combined_odom_confidence:
+    entity: sensor
+    enabled: false
+    category: diagnostic
+    source: community
+  rtk_base_data.rover.gngga:
+    entity: device_tracker
+    enabled: true
+    notes: NMEA GGA; lat/lon, fix quality (4 RTK fixed, 5 float), satellites, HDOP, altitude.
+    source: community
+  rtk_base_data.base.gngga:
+    entity: null
+    notes: Base station GGA; fix quality 7 observed (fixed/manual position).
+    source: capture
+  rtcm_age:
+    entity: sensor
+    unit: s
+    enabled: false
+    category: diagnostic
+    sentinel: -1.0
+    source: community
+  rtcm_info.current_source_type:
+    entity: sensor
+    enabled: false
+    category: diagnostic
+    source: community
+  HeadMsg.head_type:
+    entity: sensor
+    device_class: enum
+    enabled: true
+    codes: HeadMsg.head_type
+    source: vendor SDK
+  HeadSerialMsg.head_sn:
+    entity: sensor
+    enabled: false
+    category: diagnostic
+    notes: Head device serial; redacted in fixtures.
+    source: vendor SDK
+  HeadAndVersionCheck.head_firmware_version:
+    entity: update
+    enabled: true
+    source: vendor SDK
+  BodyVersionMsg.body_fw_version:
+    entity: update
+    enabled: true
+    notes: Body MCU firmware (3.2.26 observed), not the main firmware.
+    source: vendor SDK
+  version:
+    entity: update
+    enabled: true
+    notes: Main firmware. Drives the zlib rule (>= 3.9.0). 3.14.11 observed.
+    source: vendor SDK
+  ble_version:
+    entity: sensor
+    enabled: false
+    category: diagnostic
+    source: capture
+  dc_version:
+    entity: sensor
+    enabled: false
+    category: diagnostic
+    notes: Base station firmware (1.1.11 observed).
+    source: capture
+  chassis_version_msg.firmware_version:
+    entity: sensor
+    enabled: false
+    category: diagnostic
+    source: capture
+  min_app_version:
+    entity: null
+    notes: 3.9.0 observed.
+    source: capture
+  BodyMsg.recharge_state:
+    entity: binary_sensor
+    device_class: plug
+    enabled: true
+    codes: BodyMsg.recharge_state
+    notes: 1 and 3 mean wired charging, which blocks plan start. Observed 3 on the wired charger.
+    source: vendor SDK
+  BodyMsg.body_stop_button_state:
+    entity: binary_sensor
+    device_class: safety
+    enabled: true
+    source: community
+  BodyMsg.external_button_state:
+    entity: binary_sensor
+    enabled: false
+    category: diagnostic
+    source: community
+  BodyMsg.left_wheel_fault_state:
+    entity: binary_sensor
+    device_class: problem
+    enabled: false
+    source: community
+  BodyMsg.right_wheel_fault_state:
+    entity: binary_sensor
+    device_class: problem
+    enabled: false
+    source: community
+  BodyMsg.power_fault_state:
+    entity: binary_sensor
+    device_class: problem
+    enabled: false
+    source: capture
+  BodyMsg.push_pod_fault_state:
+    entity: binary_sensor
+    device_class: problem
+    enabled: false
+    source: capture
+  abnormal_msg.error_code:
+    entity: sensor
+    enabled: false
+    category: diagnostic
+    source: community
+  abnormal_msg.left_motor_err:
+    entity: binary_sensor
+    device_class: problem
+    enabled: false
+    source: briangann
+  abnormal_msg.right_motor_err:
+    entity: binary_sensor
+    device_class: problem
+    enabled: false
+    source: briangann
+  abnormal_msg.radar_state:
+    entity: binary_sensor
+    device_class: problem
+    enabled: false
+    source: briangann
+  abnormal_msg.power_fault:
+    entity: binary_sensor
+    device_class: problem
+    enabled: false
+    sentinel: -1
+    source: briangann
+  EletricMSG.body_ambient_ntc_temp:
+    entity: sensor
+    device_class: temperature
+    unit: °C
+    enabled: true
+    source: vendor SDK
+  EletricMSG.mos_temp:
+    entity: sensor
+    device_class: temperature
+    unit: °C
+    enabled: false
+    category: diagnostic
+    sentinel: -40.0
+    source: briangann
+  EletricMSG.ntc_temperature:
+    entity: sensor
+    device_class: temperature
+    unit: °C
+    enabled: false
+    category: diagnostic
+    sentinel: -40.0
+    source: briangann
+  EletricMSG.lwheel_current:
+    entity: sensor
+    device_class: current
+    unit: A
+    enabled: false
+    category: diagnostic
+    source: briangann
+  EletricMSG.rwheel_current:
+    entity: sensor
+    device_class: current
+    unit: A
+    enabled: false
+    category: diagnostic
+    source: briangann
+  EletricMSG.brushless_motor_current:
+    entity: sensor
+    device_class: current
+    unit: A
+    enabled: false
+    category: diagnostic
+    source: briangann
+  EletricMSG.push_pod_current:
+    entity: sensor
+    device_class: current
+    unit: A
+    enabled: false
+    category: diagnostic
+    source: briangann
+  RunningStatusMSG.rain_sensor_data:
+    entity: sensor
+    enabled: false
+    notes: Raw; 0 dry.
+    source: vendor SDK
+  RunningStatusMSG.chute_angle:
+    entity: sensor
+    unit: °
+    enabled: false
+    notes: Snow blower head only.
+    source: vendor SDK
+  RunningStatusMSG.head_gyro_pitch:
+    entity: sensor
+    unit: °
+    enabled: false
+    category: diagnostic
+    source: community
+  RunningStatusMSG.head_gyro_roll:
+    entity: sensor
+    unit: °
+    enabled: false
+    category: diagnostic
+    source: community
+  RunningStatusMSG.impact_sensor:
+    entity: binary_sensor
+    enabled: false
+    source: briangann
+  ultrasonic_msg.lf_dis:
+    entity: sensor
+    device_class: distance
+    unit: mm
+    enabled: false
+    sentinel: 9999
+    notes: 9999 means clear. 0 observed while asleep.
+    source: briangann
+  ultrasonic_msg.mt_dis:
+    entity: sensor
+    device_class: distance
+    unit: mm
+    enabled: false
+    sentinel: 9999
+    source: briangann
+  ultrasonic_msg.rf_dis:
+    entity: sensor
+    device_class: distance
+    unit: mm
+    enabled: false
+    sentinel: 9999
+    source: briangann
+  WheelSpeedMSG.left:
+    entity: sensor
+    unit: m/s
+    enabled: false
+    category: diagnostic
+    source: briangann
+  WheelSpeedMSG.right:
+    entity: sensor
+    unit: m/s
+    enabled: false
+    category: diagnostic
+    source: briangann
+  WheelSpeedMSG.dist_left:
+    entity: sensor
+    device_class: distance
+    unit: m
+    enabled: false
+    category: diagnostic
+    source: briangann
+  WheelSpeedMSG.dist_right:
+    entity: sensor
+    device_class: distance
+    unit: m
+    enabled: false
+    category: diagnostic
+    source: briangann
+  route_priority.hg0:
+    entity: sensor
+    enabled: false
+    category: diagnostic
+    notes: HaLow route metric; lowest wins. 10 observed.
+    source: community
+  route_priority.wlan0:
+    entity: sensor
+    enabled: false
+    category: diagnostic
+    notes: Wi-Fi route metric. 600 observed.
+    source: community
+  route_priority.wwan0:
+    entity: sensor
+    enabled: false
+    category: diagnostic
+    sentinel: -1
+    notes: -1 when no LTE module.
+    source: community
+  halow_status.strength:
+    entity: sensor
+    device_class: signal_strength
+    unit: dBm
+    enabled: true
+    source: vendor SDK
+  halow_status.conn_status:
+    entity: sensor
+    enabled: false
+    category: diagnostic
+    notes: 9 observed while connected.
+    source: capture
+  halow_status.ssid:
+    entity: null
+    notes: Base station HaLow SSID equals base_name; redacted.
+    source: capture
+  net_module_status.lte_rssi:
+    entity: sensor
+    device_class: signal_strength
+    unit: dBm
+    enabled: false
+    sentinel: 0
+    source: vendor SDK
+  net_module_status.lte_iccid:
+    entity: null
+    notes: SIM identifier; redacted, never expose.
+    source: capture
+  NetMSG.mqtt_server:
+    entity: binary_sensor
+    device_class: connectivity
+    enabled: false
+    category: diagnostic
+    notes: Cloud MQTT reachability from the robot's view. 0 observed on an egress-blocked network is expected.
+    source: community
+  NetMSG.ntrip_service:
+    entity: binary_sensor
+    device_class: connectivity
+    enabled: false
+    category: diagnostic
+    source: community
+  NetMSG.dns:
+    entity: binary_sensor
+    device_class: connectivity
+    enabled: false
+    category: diagnostic
+    source: community
+  base_status:
+    entity: sensor
+    enabled: false
+    category: diagnostic
+    notes: 0 asleep, 7 awake observed; semantics open.
+    source: capture
+  base_name:
+    entity: null
+    notes: Base station identifier; redacted.
+    source: capture
+  ntrip_server_type:
+    entity: sensor
+    enabled: false
+    category: diagnostic
+    source: capture
+  wireless_recharge.state:
+    entity: sensor
+    enabled: false
+    category: diagnostic
+    source: community
+  wireless_recharge.error_code:
+    entity: sensor
+    enabled: false
+    category: diagnostic
+    source: community
+  wireless_recharge.output_voltage:
+    entity: sensor
+    device_class: voltage
+    unit: V
+    enabled: false
+    category: diagnostic
+    notes: briangann divides by 1000 when > 1000; 15 observed raw.
+    source: briangann
+  wireless_recharge.output_current:
+    entity: sensor
+    device_class: current
+    unit: A
+    enabled: false
+    category: diagnostic
+    notes: 53 observed raw; scale unresolved.
+    source: briangann
+  wireless_recharge.temperature:
+    entity: sensor
+    device_class: temperature
+    unit: °C
+    enabled: false
+    category: diagnostic
+    source: capture
+  mower_head_info01.rain_sensor:
+    entity: binary_sensor
+    device_class: moisture
+    enabled: true
+    heads:
+    - 3
+    - 5
+    source: vendor SDK
+  mower_head_info03.left_blade_motor_current:
+    entity: sensor
+    device_class: current
+    unit: A
+    scale: 0.01
+    enabled: false
+    heads:
+    - 3
+    - 5
+    source: briangann
+  mower_head_info04.right_blade_motor_current:
+    entity: sensor
+    device_class: current
+    unit: A
+    scale: 0.01
+    enabled: false
+    heads:
+    - 3
+    - 5
+    source: briangann
+  mower_head_info03.left_blade_motor_rpm:
+    entity: sensor
+    unit: rpm
+    enabled: false
+    heads:
+    - 3
+    - 5
+    notes: Negative means counter-clockwise.
+    source: briangann
+  mower_head_info04.right_blade_motor_rpm:
+    entity: sensor
+    unit: rpm
+    enabled: false
+    heads:
+    - 3
+    - 5
+    source: briangann
+  mower_head_info03.left_blade_motor_speed:
+    entity: sensor
+    unit: '%'
+    enabled: false
+    heads:
+    - 3
+    - 5
+    source: briangann
+  mower_head_info04.right_blade_motor_speed:
+    entity: sensor
+    unit: '%'
+    enabled: false
+    heads:
+    - 3
+    - 5
+    source: briangann
+  LedInfoMSG.led_head:
+    entity: light
+    enabled: false
+    notes: 0..255; read-back for light_ctrl.
+    source: capture
+  LedInfoMSG.led_left_w:
+    entity: light
+    enabled: false
+    notes: 0..255; read-back for light_ctrl.
+    source: capture
+  LedInfoMSG.led_right_w:
+    entity: light
+    enabled: false
+    notes: 0..255; read-back for light_ctrl.
+    source: capture
+  SoftwareUpdate.update_status:
+    entity: binary_sensor
+    device_class: update
+    enabled: true
+    notes: Non-zero while an OTA is in progress.
+    source: capture
+  SoftwareUpdate.download_size:
+    entity: sensor
+    enabled: false
+    category: diagnostic
+    source: capture
+  SoftwareUpdate.still_need_time:
+    entity: sensor
+    unit: s
+    enabled: false
+    category: diagnostic
+    source: capture
+  system_info.cpu.Usage:
+    entity: sensor
+    unit: '%'
+    enabled: false
+    category: diagnostic
+    notes: Key contains a dot; use a path-aware extractor.
+    source: briangann
+  system_info.cpu.Temperature:
+    entity: sensor
+    device_class: temperature
+    unit: °C
+    enabled: false
+    category: diagnostic
+    notes: String with unit suffix, e.g. '44.384000 °C'.
+    source: capture
+  system_info.mem.MemAvailable:
+    entity: sensor
+    unit: kB
+    enabled: false
+    category: diagnostic
+    source: briangann
+  system_info.userdata.disk.availableSize:
+    entity: sensor
+    unit: B
+    enabled: false
+    category: diagnostic
+    source: briangann
+  timestamp:
+    entity: null
+    notes: Epoch seconds of the frame.
+    source: capture
+  green_grass_update_switch:
+    entity: switch
+    enabled: false
+    category: config
+    notes: Greengrass auto-update; forbidden to write.
+    source: community
+  ipcamera_ota_switch:
+    entity: switch
+    enabled: false
+    category: config
+    notes: Camera OTA; forbidden to write.
+    source: community

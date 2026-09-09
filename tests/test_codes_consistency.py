@@ -29,8 +29,8 @@ def test_wired_charging_states_match() -> None:
 
 def test_planning_codes_are_known() -> None:
     known = set(_ints(CODES["StateMSG.on_going_planning"]))
-    assert models.PLANNING_RUNNING <= known
-    assert models.PLANNING_COMPLETED <= known
+    assert known >= models.PLANNING_RUNNING
+    assert known >= models.PLANNING_COMPLETED
     # 12 (waypoint_complete) is treated as completed, not running, on purpose.
     assert 12 in models.PLANNING_COMPLETED
 

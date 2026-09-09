@@ -127,6 +127,10 @@ class Registry:
         }
         return cls(commands, forbidden, firmware_note=str(raw.get("firmware_note", "")))
 
+    @property
+    def forbidden(self) -> dict[str, list[str]]:
+        return {k: list(v) for k, v in self._forbidden.items()}
+
     def __contains__(self, name: str) -> bool:
         return name in self._commands
 

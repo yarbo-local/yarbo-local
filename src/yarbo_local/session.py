@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Awaitable, Callable, Mapping
+from dataclasses import dataclass
 import logging
 import random
 import time
@@ -34,7 +35,25 @@ from .transport import Message, Transport
 
 _LOGGER = logging.getLogger(__name__)
 
+
+@dataclass(frozen=True, slots=True)
+class MessageEvent:
+    """Every message on the robot's namespace, decoded, for observers."""
+
+    at: float
+    topic: str
+    serial: str
+    side: str
+    leaf: str
+    value: Any
+    encoding: str
+    size: int
+    echo: bool
+    raw: bytes
+
+
 StateListener = Callable[[RobotState], Awaitable[None] | None]
+MessageListener = Callable[[MessageEvent], Awaitable[None] | None]
 TopicListener = Callable[[str, Any], Awaitable[None] | None]
 ConnectionListener = Callable[[bool], Awaitable[None] | None]
 
@@ -67,6 +86,7 @@ class Session:
         self.connected = False
         self._state_listeners: list[StateListener] = []
         self._topic_listeners: list[TopicListener] = []
+        self._message_listeners: list[MessageListener] = []
         self._connection_listeners: list[ConnectionListener] = []
         self._pending: dict[str, list[asyncio.Future[Feedback]]] = {}
         self._own_publishes: list[tuple[float, str, bytes]] = []
@@ -85,6 +105,11 @@ class Session:
         """Receive every decoded device or app message as ``(leaf_or_app_cmd, value)``."""
         self._topic_listeners.append(cb)
         return lambda: self._topic_listeners.remove(cb)
+
+    def add_message_listener(self, cb: MessageListener) -> Callable[[], None]:
+        """Observe every decoded message, including echoes of our own publishes."""
+        self._message_listeners.append(cb)
+        return lambda: self._message_listeners.remove(cb)
 
     def add_connection_listener(self, cb: ConnectionListener) -> Callable[[], None]:
         self._connection_listeners.append(cb)
@@ -161,8 +186,23 @@ class Session:
         elif parsed.serial != self.serial:
             return
         value, enc = codec.decode(message.payload)
+        echo = parsed.side == "app" and self._is_own_echo(message)
+        if self._message_listeners:
+            event = MessageEvent(
+                at=time.time(),
+                topic=message.topic,
+                serial=parsed.serial,
+                side=parsed.side,
+                leaf=parsed.leaf,
+                value=value,
+                encoding=enc,
+                size=len(message.payload),
+                echo=echo,
+                raw=message.payload,
+            )
+            await self._emit(self._message_listeners, event)
         if parsed.side == "app":
-            if not self._is_own_echo(message):
+            if not echo:
                 await self._emit(self._topic_listeners, f"app/{parsed.leaf}", value)
             return
         self._seen_encodings[parsed.leaf] = enc
@@ -280,6 +320,9 @@ class Session:
                     self._pending.pop(name, None)
         if not fb.ok:
             raise CommandError(name, fb.state, fb.msg)
+        if name == "get_device_msg" and isinstance(fb.payload, dict):
+            # The snapshot is authoritative; fold it into the state for every caller.
+            await self.merge_snapshot(fb.payload)
         return fb
 
     # -- robot-level helpers

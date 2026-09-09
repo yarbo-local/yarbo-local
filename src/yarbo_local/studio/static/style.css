@@ -1,0 +1,17 @@
+:root {
+  --bg: #14171c;
+  --panel: #1b1f26;
+  --panel-2: #222731;
+  --line: #2d3340;
+  --text: #d6dbe4;
+  --muted: #8a93a3;
+  --accent: #6fb7ff;
+  --ok: #67c58a;
+  --warn: #e5b45b;
+  --bad: #e5716b;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --sans: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  color-scheme: dark;
+}
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 14px/1.4 var(--sans); }
+studio-app { display: block; height: 100%; }

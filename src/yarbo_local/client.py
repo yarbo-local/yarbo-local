@@ -118,9 +118,7 @@ class YarboRobot:
 
     async def snapshot(self) -> RobotState:
         """Full ``get_device_msg`` snapshot, merged into the state and returned."""
-        fb = await self.session.request("get_device_msg", timeout=10.0)
-        if isinstance(fb.payload, dict):
-            return await self.session.merge_snapshot(fb.payload)
+        await self.session.request("get_device_msg", timeout=10.0)
         return self.session.state
 
     async def plans(self) -> list[PlanSummary]:

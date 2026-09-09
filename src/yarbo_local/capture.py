@@ -69,8 +69,11 @@ class CaptureStats:
         return "\n".join(lines)
 
 
-def _record(topic: str, raw: bytes, redactor: Redactor | None) -> dict[str, Any]:
-    now = time.time()
+def build_record(
+    topic: str, raw: bytes, redactor: Redactor | None, *, at: float | None = None
+) -> dict[str, Any]:
+    """One JSONL record for a raw message, redacted when a redactor is given."""
+    now = time.time() if at is None else at
     payload, enc = codec.decode(raw)
     if redactor is not None:
         parsed = topics.parse(topic)
@@ -114,7 +117,7 @@ async def sniff(
             next_stats = time.monotonic() + stats_every
             async for message in client.messages:
                 raw = message.payload if isinstance(message.payload, bytes) else b""
-                rec = _record(message.topic.value, raw, redactor)
+                rec = build_record(message.topic.value, raw, redactor)
                 stats.note(message.topic.value, rec["bytes"], rec["enc"], time.monotonic())
                 if fh:
                     fh.write(json.dumps(rec, separators=(",", ":")) + "\n")

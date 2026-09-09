@@ -1,4 +1,4 @@
-"""Command line entry point: ``yarbo-local sniff|probe|discover|dump|status|sim``."""
+"""Command line entry point: ``yarbo-local sniff|probe|discover|dump|status|sim|studio``."""
 
 from __future__ import annotations
 
@@ -84,6 +84,26 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--broker", default="127.0.0.1")
     p.add_argument("--port", type=int, default=1883)
     p.add_argument("--rate", type=float, default=1.0, help="DeviceMSG frames per second awake")
+
+    p = sub.add_parser(
+        "studio", help="local web UI: live stream, knowledge diff, fixtures, command console"
+    )
+    p.add_argument("host")
+    p.add_argument("--serial", help="robot serial (learned from traffic when omitted)")
+    p.add_argument("--port", type=int, default=1883)
+    p.add_argument("--ui-host", default="127.0.0.1", help="bind address for the web UI")
+    p.add_argument("--ui-port", type=int, default=8765)
+    p.add_argument(
+        "--protocol-dir",
+        type=Path,
+        help="a checkout's protocol/ directory to write fixtures and field semantics into",
+    )
+    p.add_argument("--no-open", action="store_true", help="do not open a browser")
+    p.add_argument(
+        "--fallback-scan",
+        metavar="CIDR",
+        help="if the host does not answer, scan this subnet for a broker with this serial",
+    )
 
     p = sub.add_parser("dump", help="summarise a JSONL capture")
     p.add_argument("file", type=Path)
@@ -177,6 +197,25 @@ def main(argv: list[str] | None = None) -> int:
                 file=sys.stderr,
             )
             asyncio.run(simulator.run_on_broker(sim, args.broker, args.port, rate=args.rate))
+        elif args.cmd == "studio":
+            try:
+                from .studio.server import serve  # noqa: PLC0415 - optional extra
+            except ImportError:
+                print(
+                    "the Studio needs aiohttp: pip install 'yarbo-local[studio]'", file=sys.stderr
+                )
+                return 1
+            asyncio.run(
+                serve(
+                    args.host,
+                    robot_port=args.port,
+                    serial=args.serial,
+                    ui_host=args.ui_host,
+                    ui_port=args.ui_port,
+                    protocol_dir=args.protocol_dir,
+                    open_browser=not args.no_open,
+                )
+            )
         elif args.cmd == "dump":
             print(dump.summarise(args.file).render(keys=args.keys, app=args.app))
     except KeyboardInterrupt:
