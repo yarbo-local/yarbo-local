@@ -35,7 +35,7 @@ StateMSG.on_going_recharging:
   negative: error
   in_transit_rule: "> 0 and != 4"
 
-BodyMsg.rechargeState:
+BodyMsg.recharge_state:
   1: wired_charging
   3: wired_charging_locked
   blocks_plan_start: [1, 3]
