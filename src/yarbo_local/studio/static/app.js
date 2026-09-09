@@ -72,7 +72,7 @@ class StudioApp extends LitElement {
       nav { display: flex; gap: 4px; margin-left: auto; }
       nav button { border-radius: 4px 4px 0 0; }
       nav button.active { background: var(--accent); color: #0b1016; border-color: var(--accent); }
-      main { overflow: hidden; padding: 12px 14px; }
+      main { overflow: hidden; padding: 12px 14px; min-height: 0; }
       .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bad); display: inline-block; margin-right: 6px; }
       .dot.on { background: var(--ok); }
     `,
@@ -182,10 +182,12 @@ class StreamPane extends LitElement {
   static styles = [
     shared,
     css`
-      :host { display: grid; grid-template-columns: 1fr 1.4fr; grid-template-rows: 1fr 1fr; gap: 12px; height: 100%; }
-      .topics { grid-row: 1 / span 2; }
+      :host { display: grid; grid-template-columns: 1fr 1.4fr; grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; height: 100%; min-height: 0; }
+      .topics { grid-row: 1 / span 2; display: flex; flex-direction: column; min-height: 0; }
+      .topics .panel { flex: 1; min-height: 0; }
       .log, .diffs { display: flex; flex-direction: column; min-height: 0; }
-      .log .panel, .diffs .panel { flex: 1; }
+      .log .panel, .diffs .panel { flex: 1; min-height: 0; }
+      .log table { table-layout: fixed; }
       tr.msg { cursor: pointer; }
       tr.msg:hover td { background: var(--panel-2); }
       tr.selected td { background: var(--panel-2); }
@@ -214,7 +216,7 @@ class StreamPane extends LitElement {
     return html`
       <section class="topics">
         <h3>Topics</h3>
-        <div class="panel" style="max-height: calc(100% - 24px)">
+        <div class="panel">
           <table>
             <thead><tr><th>topic</th><th class="num">count</th><th class="num">rate/s</th><th class="num">age s</th><th>enc</th><th class="num">bytes</th></tr></thead>
             <tbody>
@@ -238,7 +240,7 @@ class StreamPane extends LitElement {
         </div>
         <div class="panel">
           <table>
-            <thead><tr><th>time</th><th>topic</th><th>enc</th><th class="num">bytes</th><th>payload</th></tr></thead>
+            <thead><tr><th style="width:92px">time</th><th style="width:200px">topic</th><th style="width:44px">enc</th><th class="num" style="width:52px">bytes</th><th>payload</th></tr></thead>
             <tbody>
               ${repeat(rows, (m) => m.t + m.topic, (m) => html`
                 <tr class=${classMap({ msg: true, selected: this.selected === m })} @click=${() => (this.selected = this.selected === m ? null : m)}>
@@ -286,9 +288,9 @@ class KnowledgePane extends LitElement {
   static styles = [
     shared,
     css`
-      :host { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; height: 100%; }
+      :host { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; height: 100%; min-height: 0; }
       section { display: flex; flex-direction: column; min-height: 0; }
-      .panel { flex: 1; }
+      .panel { flex: 1; min-height: 0; }
       form { display: grid; grid-template-columns: max-content 1fr; gap: 6px 10px; padding: 10px; background: var(--panel-2); border-radius: 6px; margin-bottom: 8px; align-items: center; }
       form .full { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end; }
       .promote { color: var(--accent); }
@@ -426,7 +428,7 @@ class FixturesPane extends LitElement {
   static styles = [
     shared,
     css`
-      :host { display: flex; flex-direction: column; gap: 12px; height: 100%; }
+      :host { display: flex; flex-direction: column; gap: 12px; height: 100%; min-height: 0; }
       .save { display: flex; gap: 8px; align-items: center; padding: 10px; background: var(--panel-2); border-radius: 6px; }
       .panel { flex: 1; }
     `,
@@ -491,7 +493,7 @@ class ConsolePane extends LitElement {
   static styles = [
     shared,
     css`
-      :host { display: grid; grid-template-columns: 1fr 1.2fr; gap: 12px; height: 100%; }
+      :host { display: grid; grid-template-columns: 1fr 1.2fr; gap: 12px; height: 100%; min-height: 0; }
       .form { display: flex; flex-direction: column; gap: 8px; }
       textarea { min-height: 120px; }
       .panel { padding: 8px; }

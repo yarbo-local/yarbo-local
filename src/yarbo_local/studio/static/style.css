@@ -14,4 +14,4 @@
   color-scheme: dark;
 }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 14px/1.4 var(--sans); }
-studio-app { display: block; height: 100%; }
+studio-app { height: 100%; }
