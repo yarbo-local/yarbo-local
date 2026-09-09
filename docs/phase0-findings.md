@@ -1,6 +1,6 @@
 # Phase 0 findings
 
-Robot: one Yarbo body, no head attached, firmware 3.14.11, base station firmware 1.1.11, body MCU 3.2.26, chassis 2.1.40. Docked on the wired charger. Phone app closed throughout. All captures are redacted fixtures under `protocol/fixtures/3.14.11/`.
+Robot: one Yarbo body, no head attached, firmware 3.14.11, base station firmware 1.1.11, body MCU 3.2.26, chassis 2.1.40. Free-standing in the garage, off any charger, about 14.5 m from the mapped dock point. Earlier revisions of this file said "docked on the wired charger"; that was a misreading of `BodyMsg.recharge_state`, see section 13. Phone app closed throughout. All captures are redacted fixtures under `protocol/fixtures/3.14.11/`.
 
 Numbering follows `phase0.md`.
 
@@ -12,14 +12,14 @@ The `discover` scanner had a real bug: `asyncio.open_connection` resolves even I
 
 ## 2. Wake-up
 
-`set_working_state {"state": 1, "source": "smart_home"}` works on the LAN. No acknowledgement on `data_feedback`. Within seconds `DeviceMSG` starts streaming and `heart_beat.working_state` flips to 1. No `get_controller` was needed. The robot puts itself back to sleep about 200 s after the last stimulus, so an unrenewed wake lasts roughly four and a half minutes. That is the reason the vendor integration renews every four minutes. Reads do not keep it awake. After a single wake with the app closed and the robot docked, `get_device_msg` was sent every 60 s. The heartbeat flipped back to 0 at t+301 s, one second after the fifth read, and `DeviceMSG` held 1 Hz until then (299 frames). A read that reset the sleep timer would have kept it awake past 440 s, so reads do not reset it. The window closed at 301 s rather than the roughly 200 s seen without reads, so either the window varies or there is a limit near 300 s from the wake itself. Reads kept answering after it slept. The consequence for the integration: continuous telemetry needs `set_working_state` re-sent before the window closes, and the vendor's four-minute renewal sits inside the measured window with little margin. Renewing does work: with `set_working_state` re-sent every 150 s after the first wake, the robot stayed awake for the whole 11-minute run (657 `DeviceMSG` frames at 1 Hz, still awake at the end). So the window is measured from the last wake command, not from the first, and reads do not count as a wake. A keep-awake that renews at 150 s has about a factor of two of margin.
+`set_working_state {"state": 1, "source": "smart_home"}` works on the LAN. No acknowledgement on `data_feedback`. Within seconds `DeviceMSG` starts streaming and `heart_beat.working_state` flips to 1. No `get_controller` was needed. The robot puts itself back to sleep about 200 s after the last stimulus, so an unrenewed wake lasts roughly four and a half minutes. That is the reason the vendor integration renews every four minutes. Reads do not keep it awake. After a single wake with the app closed and the robot parked off the charger, `get_device_msg` was sent every 60 s. The heartbeat flipped back to 0 at t+301 s, one second after the fifth read, and `DeviceMSG` held 1 Hz until then (299 frames). A read that reset the sleep timer would have kept it awake past 440 s, so reads do not reset it. The window closed at 301 s rather than the roughly 200 s seen without reads, so either the window varies or there is a limit near 300 s from the wake itself. Reads kept answering after it slept. The consequence for the integration: continuous telemetry needs `set_working_state` re-sent before the window closes, and the vendor's four-minute renewal sits inside the measured window with little margin. Renewing does work: with `set_working_state` re-sent every 150 s after the first wake, the robot stayed awake for the whole 11-minute run (657 `DeviceMSG` frames at 1 Hz, still awake at the end). So the window is measured from the last wake command, not from the first, and reads do not count as a wake. A keep-awake that renews at 150 s has about a factor of two of margin.
 
 ## 3. Cadence
 
 | State | `heart_beat` | `DeviceMSG` |
 |---|---|---|
 | asleep | every 5 s, `{"working_state": 0}` | none |
-| awake, docked, no app | every 2 s, `{"working_state": 1}` | 1.00 Hz, zlib, about 1 KB |
+| awake, parked, no app | every 2 s, `{"working_state": 1}` | 1.00 Hz, zlib, about 1 KB |
 
 The claim that `DeviceMSG` only streams while the phone app is connected is false on this firmware. It streams whenever the robot is awake.
 
@@ -79,7 +79,7 @@ Resolution order the library should use when a connection drops: last known addr
 
 ## 11. Frame conventions
 
-Not yet measured. Data points so far: `CombinedOdom` gives x 14.25, y 2.94, phi -0.20 while docked; the dock's `chargingPoint` is near the origin and its `straightPhi` is 2.91, so `phi` is radians. RTK heading in `RTKMSG.heading` is degrees. `RTKMSG.status` was `"1"` asleep and `"5"` awake, both strings.
+Not yet measured. Data points so far: `CombinedOdom` gives x 14.25, y 2.94, phi -0.20 while parked in the garage; the dock's `chargingPoint` is near the origin, so the robot sits about 14.5 m from it, and the dock's `straightPhi` of 2.91 says `phi` is radians. RTK heading in `RTKMSG.heading` is degrees. `RTKMSG.status` was `"1"` asleep and `"5"` awake, both strings.
 
 ## 12. Broker behaviour
 
@@ -89,6 +89,10 @@ The broker echoes app-side publishes to other subscribers: every probe saw its o
 - **Retained messages:** the robot publishes nothing retained, so a fresh subscriber learns nothing until the next heartbeat. The broker itself honours retained publishes on other topics.
 - **Last will:** the broker delivers a will after an abrupt disconnect. Useful for our own client's presence, useless for the robot's, which stays heartbeat-based.
 - **Firmware version:** the broker is EMQX; the rover's snapshot shows `beam.smp` among top processes, consistent with an Erlang EMQX running on the robot itself.
+
+## 13. Charging fields
+
+The robot spent the whole of Phase 0 free-standing in the garage, off any charger, and the battery went from 100% to 71% over an evening with about 25 minutes awake in total. Throughout, `BodyMsg.recharge_state` read 3, which the community code maps to "wired charging (locked)" and uses to block plan start. That mapping is wrong on 3.14.11. The fields that agreed with reality were `BatteryMSG.status` 1 (vendor rule: above 1 means charging), `StateMSG.charging_status` 0, `wireless_recharge.state` 0, and `BatteryMSG.current` -300 mA, which is the pack discharging at rest. The library's `charging` now comes from `BatteryMSG.status` and `StateMSG.charging_status` only, and nothing is derived from `recharge_state`. Neither rule has been seen in the positive direction yet; a capture on the dock is the next thing to get.
 
 ## Values settled
 

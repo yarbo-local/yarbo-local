@@ -32,10 +32,8 @@ def render(state: RobotState) -> str:
         ("activity", state.activity.value),
         ("battery", _fmt(state.battery, "%")),
         ("battery health", _fmt(state.battery_health, "%")),
-        (
-            "charging",
-            f"wired={_fmt(state.wired_charging)} wireless={_fmt(state.wireless_charging)}",
-        ),
+        ("charging", state.charging),
+        ("battery current", _fmt(state.battery_current, " A")),
         ("error code", state.error_code),
         ("rtk status", f"{_fmt(state.rtk_status)} usable={_fmt(state.rtk_usable)}"),
         ("satellites", state.satellites),

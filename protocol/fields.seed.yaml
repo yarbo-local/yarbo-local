@@ -30,7 +30,7 @@ fields:
     unit: V
     scale: 0.001
     enabled: false
-    notes: Reported in mV (41000 while docked).
+    notes: Reported in mV (41000 at rest, off the charger).
     source: capture
   BatteryMSG.current:
     entity: sensor
@@ -38,14 +38,16 @@ fields:
     unit: A
     scale: 0.001
     enabled: false
-    notes: Reported in mA; negative while charging (-300 docked).
+    notes: Reported in mA. Negative while discharging (-300 at rest, off the charger). The sign while charging
+      has not been captured.
     source: capture
   BatteryMSG.status:
     entity: binary_sensor
     device_class: battery_charging
     enabled: true
     codes: BatteryMSG.status
-    notes: 'Vendor rule: > 1 means charging on the wireless dock. Observed 1 while on the wired charger.'
+    notes: 'Vendor rule: > 1 means charging on the wireless dock. Observed 1 at rest, off any charger. No charging
+      capture yet.'
     source: vendor SDK
   BatteryMSG.temp_err:
     entity: binary_sensor
@@ -136,8 +138,7 @@ fields:
     entity: binary_sensor
     device_class: battery_charging
     enabled: true
-    notes: 'Community rule: 1..3 charging. Observed 0 on the wired charger, so BatteryMSG.status and BodyMsg.recharge_state
-      are the reliable sources.'
+    notes: 'Community rule: 1..3 charging. Observed 0 at rest, off any charger, which agrees. No charging capture yet.'
     source: community
   StateMSG.machine_controller:
     entity: sensor
@@ -392,12 +393,12 @@ fields:
     notes: 3.9.0 observed.
     source: capture
   BodyMsg.recharge_state:
-    entity: binary_sensor
-    device_class: plug
-    enabled: true
+    entity: null
     codes: BodyMsg.recharge_state
-    notes: 1 and 3 mean wired charging, which blocks plan start. Observed 3 on the wired charger.
-    source: vendor SDK
+    notes: Community mapping says 1 and 3 mean wired charging and block plan start. Observed 3 while the robot
+      sat free-standing off any charger and discharging, so that mapping is wrong on 3.14.11. Meaning unknown;
+      not used for anything.
+    source: community (contradicted)
   BodyMsg.body_stop_button_state:
     entity: binary_sensor
     device_class: safety

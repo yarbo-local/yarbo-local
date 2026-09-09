@@ -46,9 +46,9 @@ def test_state_from_real_snapshot() -> None:
     assert state.head_firmware is None  # "0.0.0" means no head
     assert state.battery == 100
     assert state.battery_health == 100
-    assert state.wired_charging  # recharge_state 3
-    assert not state.wireless_charging  # BatteryMSG.status 1
-    assert state.charging
+    assert not state.charging  # BatteryMSG.status 1, charging_status 0: off the charger
+    assert state.battery_current == -0.3  # discharging at rest
+    assert state.battery_voltage == 41.0
     assert state.head_type == 0
     assert state.head_name == "none"
     assert not state.has_mower_head
@@ -63,18 +63,20 @@ def test_state_from_real_snapshot() -> None:
     assert state.child_lock is False
     assert state.network_path == "halow"
     assert state.error_code == 0
-    assert state.activity is Activity.CHARGING
+    assert state.activity is Activity.IDLE
 
 
 def test_activity_derivation() -> None:
     base, _ = RobotState().with_frame(_snapshot(), 1.0)
     asleep, _ = base.with_heartbeat(Heartbeat(0), 2.0)
-    assert asleep.activity is Activity.CHARGING  # docked and charging wins over sleeping
+    assert asleep.activity is Activity.SLEEPING
+    charging, _ = base.with_frame({"BatteryMSG": {"status": 2}}, 2.5)
+    assert charging.charging
+    assert charging.activity is Activity.CHARGING
 
     def with_state(**fields: object) -> RobotState:
         frame = {
             "StateMSG": dict(fields),
-            "BodyMsg": {"recharge_state": 0},
             "BatteryMSG": {"status": 1},
         }
         state, _ = base.with_frame(frame, 3.0)

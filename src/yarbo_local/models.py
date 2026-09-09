@@ -19,7 +19,6 @@ from . import codec
 PLANNING_RUNNING = frozenset({1, 2, 3, 11})
 PLANNING_COMPLETED = frozenset({5, 12})
 RECHARGING_IN_TRANSIT = frozenset({1, 2, 3, 99})
-WIRED_CHARGING_STATES = frozenset({1, 3})
 RTK_USABLE = frozenset({4, 5})
 
 HEAD_TYPES = {
@@ -266,17 +265,27 @@ class RobotState:
         return _int_or_none(self.get("BatteryMSG.health"))
 
     @property
-    def wireless_charging(self) -> bool:
-        status = _int_or_none(self.get("BatteryMSG.status"))
-        return status is not None and status > 1
+    def battery_current(self) -> float | None:
+        """Amps. Negative while discharging (-0.3 A at rest); charging sign not yet captured."""
+        raw = _int_or_none(self.get("BatteryMSG.current"))
+        return raw / 1000.0 if raw is not None else None
 
     @property
-    def wired_charging(self) -> bool:
-        return _int_or_none(self.get("BodyMsg.recharge_state")) in WIRED_CHARGING_STATES
+    def battery_voltage(self) -> float | None:
+        raw = _int_or_none(self.get("BatteryMSG.voltage"))
+        return raw / 1000.0 if raw is not None else None
 
     @property
     def charging(self) -> bool:
-        return self.wired_charging or self.wireless_charging
+        """Candidate rule: ``BatteryMSG.status`` above 1 or ``StateMSG.charging_status`` set.
+
+        ``BodyMsg.recharge_state`` is not used: it read 3 while the robot sat off any
+        charger and discharged, so the community's 'wired charging' mapping is wrong.
+        No charging capture exists yet, so this is unverified in the positive direction.
+        """
+        status = _int_or_none(self.get("BatteryMSG.status")) or 0
+        charging_status = _int_or_none(self.get("StateMSG.charging_status")) or 0
+        return status > 1 or charging_status > 0
 
     @property
     def error_code(self) -> int:

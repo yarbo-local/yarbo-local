@@ -166,7 +166,7 @@ async def test_wake_then_stream(sim: Simulator, transport: FakeTransport) -> Non
     sim.tick()
     await asyncio.sleep(0.05)
     assert session.state.battery == 100
-    assert session.state.activity is Activity.CHARGING
+    assert session.state.activity is Activity.IDLE
     session.stop()
     transport.drop()
     await asyncio.wait_for(task, 1.0)

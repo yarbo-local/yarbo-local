@@ -23,8 +23,9 @@ def test_rtk_usable_matches_plan_start_rule() -> None:
     assert set(CODES["RTKMSG.status"]["plan_start_requires"]) == models.RTK_USABLE
 
 
-def test_wired_charging_states_match() -> None:
-    assert set(CODES["BodyMsg.recharge_state"]["blocks_plan_start"]) == models.WIRED_CHARGING_STATES
+def test_recharge_state_carries_no_charging_claim() -> None:
+    # Observed 3 while off any charger and discharging; the community mapping is wrong.
+    assert "blocks_plan_start" not in CODES["BodyMsg.recharge_state"]
 
 
 def test_planning_codes_are_known() -> None:
