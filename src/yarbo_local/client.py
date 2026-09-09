@@ -48,10 +48,14 @@ class YarboRobot:
         port: int = 1883,
         tls: bool = False,
         serial: str | None = None,
+        registry: Registry | None = None,
         allow_candidates: bool = False,
     ) -> YarboRobot:
         return cls(
-            MqttTransport(host, port, tls=tls), serial=serial, allow_candidates=allow_candidates
+            MqttTransport(host, port, tls=tls),
+            serial=serial,
+            registry=registry,
+            allow_candidates=allow_candidates,
         )
 
     # -- lifecycle
@@ -74,7 +78,7 @@ class YarboRobot:
         except TimeoutError as err:
             await self.close()
             raise ConnectionLostError(
-                f"no robot heartbeat within {ready_timeout:.0f}s (wrong host, or broker unreachable)"
+                f"no robot heartbeat within {ready_timeout:.0f}s (wrong host or unreachable)"
             ) from err
 
     async def close(self) -> None:

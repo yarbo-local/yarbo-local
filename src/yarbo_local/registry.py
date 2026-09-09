@@ -13,6 +13,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from dataclasses import dataclass
 import fnmatch
+import functools
 from importlib import resources
 from pathlib import Path
 from typing import Any
@@ -82,6 +83,16 @@ class Registry:
         self._commands = commands
         self._forbidden = forbidden
         self.firmware_note = firmware_note
+
+    @classmethod
+    @functools.cache
+    def default(cls) -> Registry:
+        """The packaged registry, parsed once per process.
+
+        Reads a file; hosts with an event loop should call this from an executor
+        the first time.
+        """
+        return cls.load()
 
     @classmethod
     def load(cls, path: Path | None = None) -> Registry:

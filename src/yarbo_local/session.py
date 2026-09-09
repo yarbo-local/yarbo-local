@@ -60,7 +60,7 @@ class Session:
     ) -> None:
         self.transport = transport
         self.serial = serial
-        self.registry = registry or Registry.load()
+        self.registry = registry or Registry.default()
         self.allow_candidates = allow_candidates
         self._encoding = encoding
         self.state = RobotState(serial=serial)

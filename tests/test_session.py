@@ -255,7 +255,8 @@ async def test_client_start_with_spawn_and_timeout(
 
     robot = YarboRobot(transport, serial=sim.serial)
     await robot.start(1.0, spawn=spawn)
-    assert spawned and not spawned[0].done()
+    assert spawned
+    assert not spawned[0].done()
     assert robot.state.awake is False
     await robot.close()
     assert spawned[0].cancelled()
