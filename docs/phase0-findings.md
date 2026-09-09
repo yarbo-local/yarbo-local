@@ -12,7 +12,7 @@ The `discover` scanner had a real bug: `asyncio.open_connection` resolves even I
 
 ## 2. Wake-up
 
-`set_working_state {"state": 1, "source": "smart_home"}` works on the LAN. No acknowledgement on `data_feedback`. Within seconds `DeviceMSG` starts streaming and `heart_beat.working_state` flips to 1. No `get_controller` was needed. The robot puts itself back to sleep about 200 s after the last stimulus, so an unrenewed wake lasts roughly four and a half minutes. That is the reason the vendor integration renews every four minutes. Whether reads such as `get_device_msg` also extend the awake window is untested.
+`set_working_state {"state": 1, "source": "smart_home"}` works on the LAN. No acknowledgement on `data_feedback`. Within seconds `DeviceMSG` starts streaming and `heart_beat.working_state` flips to 1. No `get_controller` was needed. The robot puts itself back to sleep about 200 s after the last stimulus, so an unrenewed wake lasts roughly four and a half minutes. That is the reason the vendor integration renews every four minutes. Reads do not keep it awake. After a single wake with the app closed and the robot docked, `get_device_msg` was sent every 60 s. The heartbeat flipped back to 0 at t+301 s, one second after the fifth read, and `DeviceMSG` held 1 Hz until then (299 frames). A read that reset the sleep timer would have kept it awake past 440 s, so reads do not reset it. The window closed at 301 s rather than the roughly 200 s seen without reads, so either the window varies or there is a limit near 300 s from the wake itself. Reads kept answering after it slept. The consequence for the integration: continuous telemetry needs `set_working_state` re-sent before the window closes, and the vendor's four-minute renewal sits inside the measured window with little margin. Whether a renewed wake extends past 300 s from the first wake is untested.
 
 ## 3. Cadence
 
@@ -98,4 +98,4 @@ The broker echoes app-side publishes to other subscribers: every probe saw its o
 
 ## Still open
 
-`cmd_recharge` cmd value, `plan_feedback` wire casing, `BatteryMSG.status` values while driving, whether reads extend the awake window, what the robot publishes on controller theft, whether both brokers accept simultaneous sessions, and TLS on 8883.
+`cmd_recharge` cmd value, `plan_feedback` wire casing, `BatteryMSG.status` values while driving, what the robot publishes on controller theft, whether both brokers accept simultaneous sessions, and TLS on 8883.

@@ -67,7 +67,7 @@ commands:
     payload: {}
     ack: data_feedback
     controller: false
-    awake: true
+    awake: false
     risk: safe
     status: verified
     firmware: "3.14.11"
