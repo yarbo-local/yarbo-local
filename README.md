@@ -2,12 +2,19 @@
 
 Local-first tooling and, later, the asyncio library behind a Home Assistant integration for Yarbo robots. It talks to the anonymous MQTT broker the robot runs on your LAN and to nothing else. No Yarbo account, no vendor servers, no telemetry.
 
-Status: **Phase 0, pre-alpha.** This repository currently contains the capture and probe tooling used to validate the protocol on real hardware, plus the protocol knowledge base that everything else will be generated from. The library API, the Home Assistant integration (`yarbo-local-ha`) and the dashboard card (`yarbo-local-card`) come after Phase 0 is answered. The plan is in the proposal linked below.
+Status: **Phase 1, pre-alpha.** Phase 0 validated the protocol on real hardware (firmware 3.14.11) and produced the knowledge base in `protocol/`. The library core now exists: a registry-gated session, typed state, a fixture-driven simulator and a small client. The Home Assistant integration (`yarbo-local-ha`) and the dashboard card (`yarbo-local-card`) are next. The plan is in the proposal linked below.
 
 ## What is here
 
 | Path | Purpose |
 |---|---|
+| `src/yarbo_local/client.py` | `YarboRobot`: connect, read typed state, and run the verified reads. |
+| `src/yarbo_local/session.py` | The protocol layer: reconnect, reply correlation, encoding choice, wake and controller rules. |
+| `src/yarbo_local/registry.py` | The command allowlist loaded from `protocol/commands.yaml`. Forbidden names cannot be sent. |
+| `src/yarbo_local/models.py` | `RobotState` and the map, plan and GNSS parsers. No I/O. |
+| `src/yarbo_local/transport.py` | aiomqtt transport plus an in-memory fake for tests. |
+| `src/yarbo_local/simulator.py` | A robot built from fixtures, for tests and for developing without hardware. |
+| `src/yarbo_local/resolve.py` | Address resolution: last address, DNS name, subnet scan. |
 | `src/yarbo_local/codec.py` | zlib-or-plain JSON codec with the firmware rule and an observed-encoding fallback. |
 | `src/yarbo_local/capture.py` | `sniff`: subscribe to `snowbot/+/#` and write every message to JSONL, optionally redacted. |
 | `src/yarbo_local/probe.py` | `probe`: send one allowlisted command, show the correlated reply and the telemetry deltas. |
@@ -30,6 +37,40 @@ uv run yarbo-local probe 192.168.40.23 get_device_msg
 ```
 
 `probe` only sends commands on a short allowlist of reads plus the wake-up command. It will not send anything that moves the robot, changes the map, or touches settings.
+
+## Using the library
+
+```python
+import asyncio
+from yarbo_local import YarboRobot
+
+async def main() -> None:
+    async with YarboRobot.for_host("192.168.50.184") as robot:
+        state = await robot.snapshot()
+        print(state.activity, state.battery, state.head_name)
+        for plan in await robot.plans():
+            print(plan.id, plan.name)
+        robot.on_state(lambda s: print("changed:", s.activity))
+        await asyncio.sleep(30)
+
+asyncio.run(main())
+```
+
+Rules the session enforces, on purpose:
+
+- Only commands in `protocol/commands.yaml` can be sent. Names in its `forbidden` section are not entries and can never be sent, with or without flags.
+- A command whose status is `candidate` is refused unless the session was opened with `allow_candidates=True`. The Home Assistant integration never does that; the Studio does.
+- A command with `risk: confirm` needs `confirmed=True` on the call.
+- The wake command and the controller role are used only when the command's flags say they are needed, and the controller is itself still a candidate.
+- Outbound encoding follows the robot's firmware, or what it has been seen sending, so a robot on 3.9 or later never silently drops a plaintext command.
+- The connection loop never returns on a dropped broker; it backs off with jitter and reconnects.
+
+The same CLI can show what the library sees, and can stand up a fake robot from a fixture for development without hardware:
+
+```bash
+uv run yarbo-local status yarbo.localdomain --watch 30
+uv run yarbo-local sim protocol/fixtures/3.14.11/get_device_msg-asleep.jsonl --broker 127.0.0.1
+```
 
 ## Can't see the base station in your router or controller?
 

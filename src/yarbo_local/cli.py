@@ -1,4 +1,4 @@
-"""Command line entry point: ``yarbo-local sniff|probe|discover|dump``."""
+"""Command line entry point: ``yarbo-local sniff|probe|discover|dump|status|sim``."""
 
 from __future__ import annotations
 
@@ -8,7 +8,8 @@ import json
 from pathlib import Path
 import sys
 
-from . import __version__, capture, discover, dump, probe, redact
+from . import __version__, capture, discover, dump, probe, redact, simulator, status
+from .exceptions import YarboError
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -64,6 +65,25 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("src", type=Path)
     p.add_argument("dst", type=Path)
     p.add_argument("--salt", help="shared salt so several files from one robot get the same tokens")
+
+    p = sub.add_parser("status", help="connect through the library and print the robot state")
+    p.add_argument("host")
+    p.add_argument("--serial", help="robot serial (learned from traffic when omitted)")
+    p.add_argument("--port", type=int, default=1883)
+    p.add_argument("--tls", action="store_true", help="use the TLS listener (usually 8883)")
+    p.add_argument("--wake", action="store_true", help="send the wake command first")
+    p.add_argument("--watch", type=float, default=0.0, help="print state changes for N seconds")
+    p.add_argument(
+        "--fallback-scan",
+        metavar="CIDR",
+        help="if the host does not answer, scan this subnet for a broker with this serial",
+    )
+
+    p = sub.add_parser("sim", help="serve a simulated robot from a fixture on an MQTT broker")
+    p.add_argument("fixture", type=Path, help="a get_device_msg fixture, see protocol/fixtures")
+    p.add_argument("--broker", default="127.0.0.1")
+    p.add_argument("--port", type=int, default=1883)
+    p.add_argument("--rate", type=float, default=1.0, help="DeviceMSG frames per second awake")
 
     p = sub.add_parser("dump", help="summarise a JSONL capture")
     p.add_argument("file", type=Path)
@@ -139,11 +159,29 @@ def main(argv: list[str] | None = None) -> int:
         elif args.cmd == "redact":
             count = redact.redact_file(args.src, args.dst, salt=args.salt)
             print(f"wrote {count} records to {args.dst}", file=sys.stderr)
+        elif args.cmd == "status":
+            return asyncio.run(
+                status.show(
+                    args.host,
+                    port=args.port,
+                    tls=args.tls,
+                    serial=args.serial,
+                    wake=args.wake,
+                    watch=args.watch,
+                )
+            )
+        elif args.cmd == "sim":
+            sim = simulator.Simulator.from_fixture(args.fixture)
+            print(
+                f"simulating {sim.serial} firmware {sim.firmware} on {args.broker}:{args.port}",
+                file=sys.stderr,
+            )
+            asyncio.run(simulator.run_on_broker(sim, args.broker, args.port, rate=args.rate))
         elif args.cmd == "dump":
             print(dump.summarise(args.file).render(keys=args.keys, app=args.app))
     except KeyboardInterrupt:
         return 130
-    except (ValueError, RuntimeError, OSError) as err:
+    except (ValueError, RuntimeError, OSError, YarboError) as err:
         print(f"error: {err}", file=sys.stderr)
         return 1
     return 0
