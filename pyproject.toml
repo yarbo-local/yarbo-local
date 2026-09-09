@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "yarbo-local"
-version = "0.0.1"
+version = "0.1.0.dev0"
 description = "Local-first asyncio library and tooling for Yarbo robots over their LAN MQTT broker. No cloud."
 readme = "README.md"
 license = "MIT"
