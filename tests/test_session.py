@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Coroutine
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -239,6 +241,28 @@ async def test_plaintext_to_new_firmware_is_dropped_by_simulator(
     session.stop()
     transport.drop()
     await asyncio.wait_for(task, 1.0)
+
+
+async def test_client_start_with_spawn_and_timeout(
+    sim: Simulator, transport: FakeTransport
+) -> None:
+    spawned: list[asyncio.Task[None]] = []
+
+    def spawn(coro: Coroutine[Any, Any, None]) -> asyncio.Task[None]:
+        task = asyncio.create_task(coro)
+        spawned.append(task)
+        return task
+
+    robot = YarboRobot(transport, serial=sim.serial)
+    await robot.start(1.0, spawn=spawn)
+    assert spawned and not spawned[0].done()
+    assert robot.state.awake is False
+    await robot.close()
+    assert spawned[0].cancelled()
+
+    dead = YarboRobot(FakeTransport(fail_next_connects=10**6), serial=sim.serial)
+    with pytest.raises(ConnectionLostError, match="no robot heartbeat"):
+        await dead.start(0.2)
 
 
 def test_topics_all_for_serial() -> None:

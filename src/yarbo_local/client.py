@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Callable
+from collections.abc import Callable, Coroutine
 import contextlib
 from types import TracebackType
 from typing import Any
 
+from .exceptions import ConnectionLostError
 from .models import (
     Feedback,
     GpsReference,
@@ -55,9 +56,26 @@ class YarboRobot:
 
     # -- lifecycle
 
-    async def start(self, ready_timeout: float = 15.0) -> None:
-        self._task = asyncio.create_task(self.session.run(), name="yarbo-session")
-        await self.session.wait_ready(ready_timeout)
+    async def start(
+        self,
+        ready_timeout: float = 15.0,
+        *,
+        spawn: Callable[[Coroutine[Any, Any, None]], asyncio.Task[None]] | None = None,
+    ) -> None:
+        """Run the session in the background and wait for the first heartbeat.
+
+        ``spawn`` lets a host such as Home Assistant own the task. On timeout the
+        session is torn down and :class:`ConnectionLostError` is raised.
+        """
+        coro = self.session.run()
+        self._task = spawn(coro) if spawn else asyncio.create_task(coro, name="yarbo-session")
+        try:
+            await self.session.wait_ready(ready_timeout)
+        except TimeoutError as err:
+            await self.close()
+            raise ConnectionLostError(
+                f"no robot heartbeat within {ready_timeout:.0f}s (wrong host, or broker unreachable)"
+            ) from err
 
     async def close(self) -> None:
         self.session.stop()

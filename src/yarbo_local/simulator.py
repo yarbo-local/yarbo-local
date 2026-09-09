@@ -91,6 +91,8 @@ class Simulator:
         """Answer publishes on a fake transport directly."""
         self._transport = transport
         transport.on_publish = self.handle
+        # A real robot heartbeats within 5 s of a subscription; answer immediately.
+        transport.on_subscribe = lambda _filter: self.tick()
 
     # -- outbound helpers
 

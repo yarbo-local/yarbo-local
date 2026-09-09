@@ -140,6 +140,7 @@ class FakeTransport:
     """In-memory transport. Tests deliver inbound messages and inspect publishes."""
 
     on_publish: PublishHook | None = None
+    on_subscribe: Callable[[str], None] | None = None
     inbox: asyncio.Queue[Message | Exception] = field(default_factory=asyncio.Queue)
     published: list[Message] = field(default_factory=list)
     filters: list[str] = field(default_factory=list)
@@ -164,6 +165,8 @@ class FakeTransport:
     async def subscribe(self, topic_filter: str) -> None:
         if topic_filter not in self.filters:
             self.filters.append(topic_filter)
+        if self.on_subscribe is not None:
+            self.on_subscribe(topic_filter)
 
     async def publish(self, topic: str, payload: bytes, *, retain: bool = False) -> None:
         if not self._connected:
