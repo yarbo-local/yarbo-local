@@ -11,6 +11,8 @@ What it does:
   and NMEA ``$GNGGA`` / ``$GPGGA`` sentences, whose checksum is recomputed.
 - MAC addresses, IPv4 addresses, Wi-Fi SSIDs and passwords, and the base
   station name are replaced.
+- JSON carried as a string and base64-zlib blobs (``get_map``) are decoded,
+  redacted inside, and re-encoded in the same form.
 
 What it does not do: guarantee anonymity. Review a redacted file before
 publishing it. Field names are kept intact on purpose, they are the point.
@@ -18,6 +20,7 @@ publishing it. Field names are kept intact on purpose, they are the point.
 
 from __future__ import annotations
 
+import base64
 from dataclasses import dataclass, field
 import hashlib
 import json
@@ -25,6 +28,9 @@ from pathlib import Path
 import re
 import secrets
 from typing import Any
+import zlib
+
+from . import codec
 
 _MAC_RE = re.compile(r"\b(?:[0-9A-Fa-f]{1,2}[:-]){5}[0-9A-Fa-f]{1,2}\b")
 _IPV4_RE = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
@@ -199,6 +205,12 @@ class Redactor:
             if nested is not None:
                 # A JSON document carried as a string (modebase_info.ModeBase does this).
                 return json.dumps(self.redact_value(nested), separators=(",", ":"))
+            blob = codec.decode_blob(value)
+            if blob is not None and blob[1] == "b64zlib":
+                # get_map and map backups: base64 of zlib JSON inside the reply. Redact inside
+                # and re-encode, or the zone refs pass through as opaque text.
+                inner = json.dumps(self.redact_value(blob[0]), separators=(",", ":"))
+                return base64.b64encode(zlib.compress(inner.encode("utf-8"))).decode("ascii")
             return self.redact_text(value)
         return value
 

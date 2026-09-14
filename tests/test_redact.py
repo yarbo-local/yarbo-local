@@ -1,6 +1,9 @@
+import base64
 import json
 from pathlib import Path
+import zlib
 
+from yarbo_local import codec
 from yarbo_local.redact import Redactor, _nmea_checksum, redact_file
 
 
@@ -132,3 +135,28 @@ def test_text_coordinates_are_shifted_and_placeholders_kept() -> None:
     assert out["placeholder"] == {"latitude": "999.999", "longitude": "999.999"}
     assert out["zero"] == {"lat": "0", "lon": "0.0"}
     assert out["junk"]["latitude"] == "REDACTED"
+
+
+def test_base64_zlib_map_blob_is_redacted_inside() -> None:
+    site = {
+        "areas": [
+            {
+                "id": 1,
+                "name": "Area 1",
+                "ref": {"latitude": 42.123456, "longitude": -71.654321},
+                "range": [{"x": 1.0, "y": 2.0, "phi": 0.0}],
+            }
+        ]
+    }
+    blob = base64.b64encode(zlib.compress(json.dumps(site).encode())).decode()
+    r = Redactor(salt="t", lat_offset=1.0, lon_offset=2.0)
+    out = r.redact_value({"topic": "get_map", "data": blob})
+    decoded = codec.decode_blob(out["data"])
+    assert decoded is not None
+    inner, kind = decoded
+    assert kind == "b64zlib"
+    area = inner["areas"][0]
+    assert area["ref"]["latitude"] == 43.123456
+    assert round(area["ref"]["longitude"], 6) == -69.654321
+    assert area["range"] == [{"x": 1.0, "y": 2.0, "phi": 0.0}]
+    assert "42.1234" not in json.dumps(out)

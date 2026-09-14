@@ -317,10 +317,15 @@ commands:
   save_pathway:
     payload: {id: int (omit to create), name: str, range: [{x, y, phi}], ref: {latitude, longitude}, connectids: [], leaf_piles: [], snowPiles: [], trimming_edges: []}
     ack: data_feedback
-    controller: true
+    controller: unknown
     risk: confirm
     status: candidate
-    source: steves2j editor
+    observed: fixtures/3.14.11/mapping-area-app.jsonl
+    notes: >
+      Observed from the phone app on 3.14.11 creating "Pathway 1" (5 vertices) after the area was saved, acked
+      state 0. The app sent no get_controller during the session. The stored record gains start_id, end_id and
+      connectd_points, which the app does not send.
+    source: steves2j editor; app capture 2026-09-14
   save_sidewalk:
     payload: {id: int (omit to create), name: str, head_type: 99, range: [{x, y, phi}], ref: {latitude, longitude}, connectids: [], snowPiles: [], trimming_edges: [{id, ref, range}]}
     ack: data_feedback
@@ -328,6 +333,66 @@ commands:
     risk: confirm
     status: candidate
     source: steves2j editor
+  save_clean_area:
+    payload: {id: int (omit to create), name: str, algorithm_type: int, labels: [int], range: [{x, y, phi}], ref: {latitude, longitude}, push_snow_dir: float, slope_degrees: float, leaf_piles: [], snowPiles: [], trimming_edges: []}
+    ack: data_feedback
+    controller: unknown
+    risk: confirm
+    status: candidate
+    observed: fixtures/3.14.11/mapping-area-app.jsonl
+    notes: >
+      Observed from the phone app creating "Area 1" (25 vertices, 126 m2): first without id or labels, then
+      again with id 1 and labels [1] after save_area_params; both acked state 0. 9999.0 in push_snow_dir and
+      slope_degrees means unset. The stored record adds area (m2), mapping_module_type, mult_grid, humps and the
+      low-confidence distances.
+    source: app capture 2026-09-14
+  read_area_params:
+    payload: {id: int}
+    ack: data_feedback
+    controller: false
+    risk: safe
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/area-params.jsonl
+    observed: fixtures/3.14.11/mapping-area-app.jsonl
+    verified_notes: >
+      state 0, msg "Area settings details retrieved successfully." Reply {id, gap, clean_times, contract_dis,
+      edge_circles, edge_direction_mode, route_offset_enable, first_clean_params, double_clean_params} with
+      snow-blower fields (roller_speed, chute and pitch angles, push pod places, plan_speed, heavy_snow_mode).
+      An unknown id also answers state 0, with defaults and id 0: check the id in the reply.
+    notes: Per-area work settings. The app reads them right after creating an area.
+    source: app capture 2026-09-14
+  save_area_params:
+    payload: {id: int, gap: float, clean_times: int, contract_dis: float, first_clean_params: {roller_speed, chute_0_angle, chute_180_angle, pitch_0_angle, pitch_45_angle, land_push_pod_place, plan_speed, heavy_snow_mode}, double_clean_params: {...}}
+    ack: data_feedback
+    controller: unknown
+    risk: confirm
+    status: candidate
+    observed: fixtures/3.14.11/mapping-area-app.jsonl
+    notes: Snow-blower settings for an area, written by the app when the area is created. Acked state 0.
+    source: app capture 2026-09-14
+  read_pathway_params:
+    payload: {id: int}
+    ack: data_feedback
+    controller: false
+    risk: safe
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/area-params.jsonl
+    observed: fixtures/3.14.11/mapping-area-app.jsonl
+    verified_notes: >
+      state 0, msg "  Successfully !" (sic). Reply {id, roller_speed, chute_0_angle, chute_180_angle,
+      pitch_0_angle, pitch_45_angle, land_push_pod_place, rotate_push_pod_place, plan_speed, obs_avoid,
+      sensor_switch}.
+    source: app capture 2026-09-14
+  save_pathway_params:
+    payload: {id: int, roller_speed: int, chute_0_angle: int, chute_180_angle: int, pitch_0_angle: int, pitch_45_angle: int, land_push_pod_place: int, plan_speed: float, heavy_snow_mode: null, obs_avoid: bool}
+    ack: data_feedback
+    controller: unknown
+    risk: confirm
+    status: candidate
+    observed: fixtures/3.14.11/mapping-area-app.jsonl
+    source: app capture 2026-09-14
   del_nogozone:
     payload: {id: int}
     ack: data_feedback
@@ -482,6 +547,7 @@ forbidden:
     - push_rod_target
     - control_direct
     - set_combined_odom_path_state
+    - set_auto_mapping_state   # observed from the app during mapping, 2026-09-14
     - start_way_point
     - start_action
     - start_draw_cmd

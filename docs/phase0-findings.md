@@ -47,6 +47,8 @@ Read-back exists in `StateMSG` for `person_detect_status`, `child_lock_status`, 
 
 ## 8. Write acknowledgement
 
+Answered in section 14: the app's saves are acknowledged on `data_feedback` with state 0.
+
 Not tested. Needs the phone app to create a throwaway zone while sniffing.
 
 ## 9. Controller theft
@@ -95,6 +97,18 @@ The broker echoes app-side publishes to other subscribers: every probe saw its o
 The robot spent the whole of Phase 0 free-standing in the garage, off any charger, and the battery went from 100% to 71% over an evening with about 25 minutes awake in total. Throughout, `BodyMsg.recharge_state` read 3, which the community code maps to "wired charging (locked)" and uses to block plan start. That mapping is wrong on 3.14.11. The fields that agreed with reality were `BatteryMSG.status` 1 (vendor rule: above 1 means charging), `StateMSG.charging_status` 0, `wireless_recharge.state` 0, and `BatteryMSG.current` -300 mA, which is the pack discharging at rest. The library's `charging` now comes from `BatteryMSG.status` and `StateMSG.charging_status` only, and nothing is derived from `recharge_state`. Neither rule has been seen in the positive direction yet.
 
 On 2026-09-14 the robot was back on the dock: odometry read x -0.00, y -0.18, on top of the dock's `chargingPoint` at -0.05, -0.21. Battery 100%, `BatteryMSG.status` 1, `StateMSG.charging_status` 0, `wireless_recharge.state` 0, `BatteryMSG.current` -300 to -400 mA, and `BodyMsg.recharge_state` **0**, against 3 off the dock. `wireless_recharge.output_voltage` read 10 on the dock and 15 off it. A full battery drawing 0.3 A from itself is consistent with a charger that has stopped at 100%, so this still does not show a charging value; it does show that `recharge_state` changes with docking, in the opposite direction to the community mapping. Fixture: `docked-awake-75s.jsonl`. A capture on the dock below 100% is what settles the charging rule.
+
+## 14. Mapping through the app, and the map frame
+
+On 2026-09-14 the driveway was mapped with the phone app while a passive capture ran on the rover's broker. Every app command and every reply passed through that broker, so the app observer idea works on this firmware without touching Yarbo's servers. Fixtures: `mapping-area-app.jsonl` (trimmed, redacted), `get_map-area-pathway.jsonl`, `area-params.jsonl`.
+
+What the app sent, in order: `set_working_state` every 10 s for the whole session as its keep-awake; `cmd_vel` at about 5 Hz while driving by joystick (forbidden for this project); `cmd_roller` twice; `start_draw_cmd`; paired `set_auto_mapping_state {state, dir}`; `set_combined_odom_path_state {state, type}` to start and stop trail recording, during which the robot publishes `device/combined_odom_path` at 1 Hz; then `save_clean_area` without an id, `save_scan`, `read_area_params`, `save_area_params`, `save_clean_area` again with id 1 and `labels: [1]`, `read_all_clean_area`; and finally `save_pathway`, `read_pathway_params`, `save_pathway_params`. No `get_controller` was sent during the session. `start_draw_cmd`, `set_combined_odom_path_state` and `set_auto_mapping_state` stay on the forbidden motion list; mapping is something a person does with the app. `save_scan` is not registered because its purpose is unknown. Every save answered on `data_feedback` with state 0, which answers question 8: writes are acknowledged there like reads.
+
+The robot stored an area "Area 1" (id 1, 25 vertices, 126.4 m2, stored `area` field) and a line "Pathway 1" (id 2, 5 vertices, 16.9 m, `start_id` 1, `end_id` 0). The app's default names were kept. `push_snow_dir` and `slope_degrees` of 9999.0 mean unset. `humps.ref` carries uninitialised denormal floats such as 5e-324. No plans exist yet.
+
+**Map frame.** Zone `range` points are metres in a local frame whose origin is the zone's `ref` latitude and longitude, with **x pointing west and y pointing north**. Fitting 1,152 RTK-fixed samples of `CombinedOdom` against the rover's GGA fix from the same drive gives an RMS difference of 0.20 m, maximum 0.27 m, which is the antenna offset. The steves2j map card uses the same convention independently (`lon = ref_lon - x / m_per_deg_lon`). A first fit that allowed only rotation and scale failed badly, because a mirrored axis cannot be expressed that way. `CombinedOdom.phi` and vertex `phi` are radians measured from +x towards +y; in 339 of 345 moving steps the robot travelled along `phi`, and the other 6 were reversing.
+
+**Redaction consequence.** The redactor shifts latitude and longitude by whole-degree offsets. Differences in latitude survive in metres, but metres per degree of longitude depend on the true latitude, so east-west distances computed from a redacted fixture are wrong by that factor. Tests on redacted fixtures check signs and the north axis only.
 
 ## Values settled
 
