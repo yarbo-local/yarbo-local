@@ -15,6 +15,7 @@ from .models import (
     PlanSummary,
     RobotState,
     SiteMap,
+    parse_area_params,
     parse_gps_ref,
     parse_plans,
     parse_site_map,
@@ -133,6 +134,15 @@ class YarboRobot:
         fb = await self.session.request("get_map", timeout=30.0)
         payload = fb.payload
         return parse_site_map(payload if isinstance(payload, dict) else {})
+
+    async def area_params(self, area_id: int) -> dict[str, Any] | None:
+        """Work settings for one area; None when the robot has no such area."""
+        fb = await self.session.request("read_area_params", {"id": area_id})
+        return parse_area_params(fb.payload, area_id)
+
+    async def pathway_params(self, pathway_id: int) -> dict[str, Any] | None:
+        fb = await self.session.request("read_pathway_params", {"id": pathway_id})
+        return parse_area_params(fb.payload, pathway_id)
 
     async def recharge_point(self) -> Any:
         return (await self.session.request("read_recharge_point")).payload

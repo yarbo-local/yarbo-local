@@ -1224,7 +1224,7 @@ fields:
   RTKMSG.lan:
     types:
     - float
-    example: 89.0
+    example: -67.66036285
     seen:
       push: 0
       snapshot: 4

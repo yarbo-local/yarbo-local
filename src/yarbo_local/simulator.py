@@ -24,6 +24,25 @@ from .transport import FakeTransport, Message, Transport
 SLEEP_AFTER = 200.0
 
 
+def load_site_map(fixture: Path) -> dict[str, Any]:
+    """The decoded ``get_map`` data from a fixture (the last reply in the file)."""
+    found: dict[str, Any] | None = None
+    for line in fixture.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        rec = json.loads(line)
+        payload = rec.get("payload")
+        if isinstance(payload, dict) and payload.get("topic") == "get_map":
+            blob = codec.decode_blob(payload.get("data"))
+            if blob is not None and isinstance(blob[0], dict):
+                found = blob[0]
+            elif isinstance(payload.get("data"), dict):
+                found = payload["data"]
+    if found is None:
+        raise ValueError(f"{fixture}: no get_map reply found")
+    return found
+
+
 def load_snapshot(fixture: Path) -> tuple[str, dict[str, Any]]:
     """Return ``(serial, snapshot)`` from a get_device_msg fixture."""
     serial: str | None = None
@@ -66,9 +85,11 @@ class Simulator:
     log: list[tuple[str, Any]] = field(default_factory=list)
 
     @classmethod
-    def from_fixture(cls, fixture: Path) -> Simulator:
+    def from_fixture(cls, fixture: Path, *, map_fixture: Path | None = None) -> Simulator:
         serial, snapshot = load_snapshot(fixture)
         sim = cls(serial=serial, snapshot=snapshot)
+        if map_fixture is not None:
+            sim.site_map = load_site_map(map_fixture)
         sim.firmware = str(snapshot.get("version") or sim.firmware)
         if not sim.site_map:
             sim.site_map = {
@@ -207,21 +228,49 @@ class Simulator:
     def cmd_read_recharge_point(self, value: Any) -> None:
         self._feedback("read_recharge_point", 0, "", snapshot_dock())
 
-    def _empty_list(self, name: str) -> None:
-        self._feedback(name, 0, "", {"data": []})
+    def _map_list(self, name: str, family: str) -> None:
+        self._feedback(name, 0, "", {"data": list(self.site_map.get(family) or [])})
 
     def cmd_read_all_nogozone(self, value: Any) -> None:
-        self._empty_list("read_all_nogozone")
+        self._map_list("read_all_nogozone", "nogozones")
 
     def cmd_read_all_clean_area(self, value: Any) -> None:
-        self._empty_list("read_all_clean_area")
+        self._map_list("read_all_clean_area", "areas")
 
     def cmd_read_all_pathway(self, value: Any) -> None:
-        self._empty_list("read_all_pathway")
+        self._map_list("read_all_pathway", "pathways")
 
     def cmd_read_all_sidewalk(self, value: Any) -> None:
-        self._empty_list("read_all_sidewalk")
+        self._map_list("read_all_sidewalk", "sidewalks")
 
+    def cmd_read_area_params(self, value: Any) -> None:
+        wanted = value.get("id") if isinstance(value, dict) else None
+        known = {a.get("id") for a in self.site_map.get("areas") or []}
+        self._feedback(
+            "read_area_params",
+            0,
+            "Area settings details retrieved successfully.",
+            {**AREA_PARAMS_DEFAULT, "id": wanted if wanted in known else 0},
+        )
+
+    def edit_map(self, family: str, record: dict[str, Any], *, command: str) -> None:
+        """Change the stored map and emit the ack an app edit produces."""
+        records = [r for r in self.site_map.get(family) or [] if r.get("id") != record.get("id")]
+        records.append(record)
+        self.site_map = {**self.site_map, family: records}
+        self._feedback(command, 0, "", "")
+
+
+AREA_PARAMS_DEFAULT: dict[str, Any] = {
+    "clean_times": 1,
+    "contract_dis": 0.2,
+    "edge_circles": 1,
+    "edge_direction_mode": 0,
+    "gap": 0.3,
+    "route_offset_enable": True,
+    "first_clean_params": {"roller_speed": 1600, "plan_speed": 0.4, "heavy_snow_mode": True},
+    "double_clean_params": {"roller_speed": 1300, "plan_speed": 0.4, "heavy_snow_mode": False},
+}
 
 PUSH_KEYS = frozenset(
     {

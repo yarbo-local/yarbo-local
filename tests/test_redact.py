@@ -160,3 +160,10 @@ def test_base64_zlib_map_blob_is_redacted_inside() -> None:
     assert round(area["ref"]["longitude"], 6) == -69.654321
     assert area["range"] == [{"x": 1.0, "y": 2.0, "phi": 0.0}]
     assert "42.1234" not in json.dumps(out)
+
+
+def test_latitude_shift_keeps_differences_near_the_wrap() -> None:
+    r = Redactor(salt="t", lat_offset=59.9, lon_offset=0.0)
+    a, b = r.shift_lat(28.00), r.shift_lat(28.01)  # 87.9 and 87.91 would have clamped to 89
+    assert round(b - a, 6) == 0.01
+    assert -80.0 <= a <= 80.0

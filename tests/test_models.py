@@ -2,17 +2,21 @@ import json
 from pathlib import Path
 
 from yarbo_local.models import (
+    METERS_PER_DEGREE,
     Activity,
     Feedback,
     Heartbeat,
     RobotState,
     deep_merge,
+    local_to_wgs84,
+    parse_area_params,
     parse_gga,
     parse_gps_ref,
     parse_plans,
     parse_site_map,
+    wgs84_to_local,
 )
-from yarbo_local.simulator import load_snapshot
+from yarbo_local.simulator import load_site_map, load_snapshot
 
 FIXTURES = Path(__file__).resolve().parents[1] / "protocol" / "fixtures" / "3.14.11"
 
@@ -150,3 +154,88 @@ def test_plans_and_gps_ref_shapes() -> None:
     assert ref.fixed
     assert ref.height == 3.0
     assert parse_gps_ref({"ref": {"latitude": 0, "longitude": 0}}) is None
+
+
+def test_frame_conversion_roundtrip_and_axes() -> None:
+    ref = (42.0, -71.0)
+    lat, lon = local_to_wgs84(ref, 10.0, 0.0)
+    assert lat == 42.0
+    assert lon < -71.0  # +x is west
+    lat, lon = local_to_wgs84(ref, 0.0, 10.0)
+    assert lat > 42.0  # +y is north
+    assert lon == -71.0
+    x, y = wgs84_to_local(ref, *local_to_wgs84(ref, -12.5, 33.25))
+    assert round(x, 6) == -12.5
+    assert round(y, 6) == 33.25
+
+
+def test_real_map_with_area_and_pathway() -> None:
+    site = parse_site_map(load_site_map(FIXTURES / "get_map-area-pathway.jsonl"))
+    assert [(z.family, z.id, z.name) for z in site.zones] == [
+        ("areas", 1, "Area 1"),
+        ("pathways", 2, "Pathway 1"),
+    ]
+    area, pathway = site.areas[0], site.pathways[0]
+    assert len(area.points) == 25
+    assert area.closed
+    assert area.area_m2 is not None
+    assert round(area.area_m2, 1) == 126.4
+    assert not pathway.closed
+    assert pathway.area_m2 is None
+    assert round(pathway.length_m, 1) == 16.9
+    assert pathway.start_id == 1
+    assert len(site.charging) == 1
+    assert site.reference is not None
+    bounds = site.bounds()
+    assert bounds is not None
+    assert bounds[3] - bounds[1] > 30  # the driveway runs about 34 m north-south
+
+    geo = site.to_geojson()
+    assert geo["type"] == "FeatureCollection"
+    kinds = {f["properties"]["family"]: f["geometry"]["type"] for f in geo["features"]}
+    assert kinds == {"areas": "Polygon", "pathways": "LineString", "dock": "Point"}
+    ring = next(f for f in geo["features"] if f["properties"]["family"] == "areas")["geometry"]
+    assert ring["coordinates"][0][0] == ring["coordinates"][0][-1]
+    assert len(ring["coordinates"][0]) == 26
+    summary = site.summary()
+    assert summary["zones"][0]["area_m2"] == 126.4
+    assert "ref" not in str(summary)
+
+
+def test_map_frame_orientation_against_rtk_in_the_mapping_fixture() -> None:
+    """y is north in metres; x grows as longitude falls (west).
+
+    Redaction shifts latitude and longitude by whole degrees, which keeps latitude
+    differences in metres exact but not longitude differences, so only the north
+    axis is checked metrically and the east-west axis by sign.
+    """
+    records = [
+        json.loads(line)
+        for line in (FIXTURES / "mapping-area-app.jsonl").read_text().splitlines()
+        if line.strip()
+    ]
+    ref = next(
+        (r["payload"]["ref"]["latitude"], r["payload"]["ref"]["longitude"])
+        for r in records
+        if r["topic"].endswith("/app/save_clean_area")
+    )
+    checked = 0
+    for rec in records:
+        if not rec["topic"].endswith("/device/DeviceMSG"):
+            continue
+        state, _ = RobotState().with_frame(rec["payload"], 0.0)
+        fix, pos = state.fix, state.position
+        if fix is None or pos is None or fix.quality != 4:
+            continue
+        north = (fix.latitude - ref[0]) * METERS_PER_DEGREE
+        assert abs(north - pos[1]) < 0.5
+        if abs(pos[0]) > 3:
+            assert (fix.longitude - ref[1]) * pos[0] < 0  # x and east have opposite signs
+        checked += 1
+    assert checked > 50
+
+
+def test_area_params_rejects_defaults_for_unknown_id() -> None:
+    assert parse_area_params({"id": 1, "gap": 0.3}, 1) == {"id": 1, "gap": 0.3}
+    assert parse_area_params({"id": 0, "gap": 0.3}, 99) is None
+    assert parse_area_params("nope", 1) is None

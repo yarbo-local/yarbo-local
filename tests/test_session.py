@@ -284,3 +284,20 @@ async def test_sync_listener_returning_a_value(sim: Simulator, transport: FakeTr
     session.stop()
     transport.drop()
     await asyncio.wait_for(task, 1.0)
+
+
+async def test_client_map_and_area_params_from_real_map() -> None:
+    sim = Simulator.from_fixture(FIXTURE, map_fixture=FIXTURE.parent / "get_map-area-pathway.jsonl")
+    transport = FakeTransport()
+    sim.attach(transport)
+    robot = YarboRobot(transport, serial=sim.serial)
+    await robot.start(1.0)
+    site = await robot.site_map()
+    assert [z.name for z in site.zones] == ["Area 1", "Pathway 1"]
+    params = await robot.area_params(1)
+    assert params is not None
+    assert params["id"] == 1
+    assert await robot.area_params(99) is None
+    listed = await robot.session.request("read_all_clean_area", timeout=1.0)
+    assert [a["name"] for a in listed.payload["data"]] == ["Area 1"]
+    await robot.close()

@@ -110,8 +110,10 @@ class Redactor:
     # -- coordinates -------------------------------------------------------
 
     def shift_lat(self, lat: float) -> float:
-        shifted = lat + self.lat_offset
-        return max(-89.0, min(89.0, shifted))
+        # Wrap within +/-80 degrees instead of clamping at the pole: clamping collapsed
+        # every point of a site onto one latitude whenever the offset pushed it past 89.
+        # A site a few kilometres across straddles the wrap seam with negligible odds.
+        return round((lat + self.lat_offset + 80.0) % 160.0 - 80.0, 10)
 
     def shift_lon(self, lon: float) -> float:
         shifted = lon + self.lon_offset

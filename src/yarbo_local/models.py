@@ -10,6 +10,8 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
 from enum import StrEnum
+import itertools
+import math
 from typing import Any
 
 from . import codec
@@ -430,6 +432,30 @@ class RobotState:
 
 # --- map
 
+# Map frame, verified on 3.14.11 against RTK fix (RMS 0.20 m over 1152 samples) and
+# matching the steves2j map card: zone points are metres from the zone's ``ref``
+# with x pointing WEST and y pointing NORTH. ``phi`` is radians from +x toward +y.
+METERS_PER_DEGREE = 6378137.0 * math.pi / 180.0
+
+CLOSED_FAMILIES = frozenset({"areas", "nogozones", "novisionzones", "elec_fence"})
+LINE_FAMILIES = frozenset({"pathways", "sidewalks", "deadends"})
+
+
+def local_to_wgs84(ref: tuple[float, float], x: float, y: float) -> tuple[float, float]:
+    """Local metres (x west, y north) to ``(latitude, longitude)``."""
+    lat0, lon0 = ref
+    lat = lat0 + y / METERS_PER_DEGREE
+    lon = lon0 - x / (METERS_PER_DEGREE * math.cos(math.radians(lat0)))
+    return lat, lon
+
+
+def wgs84_to_local(ref: tuple[float, float], lat: float, lon: float) -> tuple[float, float]:
+    """``(latitude, longitude)`` to local metres (x west, y north)."""
+    lat0, lon0 = ref
+    x = -(lon - lon0) * METERS_PER_DEGREE * math.cos(math.radians(lat0))
+    y = (lat - lat0) * METERS_PER_DEGREE
+    return x, y
+
 
 @dataclass(frozen=True, slots=True)
 class Zone:
@@ -441,6 +467,49 @@ class Zone:
     points: tuple[tuple[float, float, float], ...]
     ref: tuple[float, float] | None
     extra: Mapping[str, Any]
+
+    @property
+    def closed(self) -> bool:
+        return self.family in CLOSED_FAMILIES
+
+    @property
+    def area_m2(self) -> float | None:
+        """The robot's stored area when present, else the polygon's own area."""
+        if not self.closed:
+            return None
+        stored = _float_or_none(self.extra.get("area"))
+        if stored is not None and stored > 0:
+            return stored
+        if len(self.points) < 3:
+            return None
+        twice = 0.0
+        pts = self.points
+        for (x1, y1, _), (x2, y2, _) in zip(pts, pts[1:] + pts[:1], strict=True):
+            twice += x1 * y2 - x2 * y1
+        return abs(twice) / 2.0
+
+    @property
+    def length_m(self) -> float:
+        pts = [(p[0], p[1]) for p in self.points]
+        if self.closed and len(pts) > 2:
+            pts.append(pts[0])
+        return sum(math.dist(a, b) for a, b in itertools.pairwise(pts))
+
+    @property
+    def centroid(self) -> tuple[float, float] | None:
+        if not self.points:
+            return None
+        xs = [p[0] for p in self.points]
+        ys = [p[1] for p in self.points]
+        return (sum(xs) / len(xs), sum(ys) / len(ys))
+
+    @property
+    def start_id(self) -> int | None:
+        return _int_or_none(self.extra.get("start_id"))
+
+    @property
+    def end_id(self) -> int | None:
+        return _int_or_none(self.extra.get("end_id"))
 
 
 @dataclass(frozen=True, slots=True)
@@ -462,6 +531,107 @@ class SiteMap:
 
     def family(self, name: str) -> list[Zone]:
         return [z for z in self.zones if z.family == name]
+
+    @property
+    def areas(self) -> list[Zone]:
+        return self.family("areas")
+
+    @property
+    def pathways(self) -> list[Zone]:
+        return self.family("pathways")
+
+    @property
+    def nogozones(self) -> list[Zone]:
+        return self.family("nogozones")
+
+    @property
+    def empty(self) -> bool:
+        return not self.zones
+
+    def bounds(self) -> tuple[float, float, float, float] | None:
+        """``(min_x, min_y, max_x, max_y)`` in local metres over zones and docks."""
+        xs: list[float] = []
+        ys: list[float] = []
+        for zone in self.zones:
+            xs.extend(p[0] for p in zone.points)
+            ys.extend(p[1] for p in zone.points)
+        for dock in self.charging:
+            xs.append(dock.point[0])
+            ys.append(dock.point[1])
+        if not xs:
+            return None
+        return (min(xs), min(ys), max(xs), max(ys))
+
+    def summary(self) -> dict[str, Any]:
+        """Names, sizes and counts; no coordinates."""
+        return {
+            "zones": [
+                {
+                    "family": z.family,
+                    "id": z.id,
+                    "name": z.name,
+                    "enabled": z.enabled,
+                    "points": len(z.points),
+                    "area_m2": round(z.area_m2, 1) if z.area_m2 is not None else None,
+                    "length_m": round(z.length_m, 1),
+                }
+                for z in self.zones
+            ],
+            "docks": len(self.charging),
+        }
+
+    def to_geojson(self) -> dict[str, Any]:
+        """A GeoJSON FeatureCollection in WGS84, ``[longitude, latitude]`` order.
+
+        Each zone is placed with its own ``ref``; docks use the site reference. Zones
+        without any reference are left out, since they cannot be placed.
+        """
+        features: list[dict[str, Any]] = []
+        for zone in self.zones:
+            ref = zone.ref or self.reference
+            if ref is None or not zone.points:
+                continue
+            coords = [_lonlat(ref, p[0], p[1]) for p in zone.points]
+            if zone.closed:
+                if len(coords) < 3:
+                    continue
+                if coords[0] != coords[-1]:
+                    coords.append(coords[0])
+                geometry: dict[str, Any] = {"type": "Polygon", "coordinates": [coords]}
+            else:
+                if len(coords) < 2:
+                    continue
+                geometry = {"type": "LineString", "coordinates": coords}
+            features.append(
+                {
+                    "type": "Feature",
+                    "id": f"{zone.family}-{zone.id}",
+                    "geometry": geometry,
+                    "properties": {
+                        "family": zone.family,
+                        "id": zone.id,
+                        "name": zone.name,
+                        "enabled": zone.enabled,
+                        "type": zone.type,
+                        "area_m2": round(zone.area_m2, 1) if zone.area_m2 is not None else None,
+                        "length_m": round(zone.length_m, 1),
+                    },
+                }
+            )
+        if self.reference is not None:
+            for dock in self.charging:
+                features.append(
+                    {
+                        "type": "Feature",
+                        "id": f"dock-{dock.id}",
+                        "geometry": {
+                            "type": "Point",
+                            "coordinates": _lonlat(self.reference, dock.point[0], dock.point[1]),
+                        },
+                        "properties": {"family": "dock", "id": dock.id, "name": dock.name},
+                    }
+                )
+        return {"type": "FeatureCollection", "features": features}
 
 
 ZONE_FAMILIES = (
@@ -493,6 +663,23 @@ def _ref(raw: Any) -> tuple[float, float] | None:
     if lat is None or lon is None or (abs(lat) < 1e-6 and abs(lon) < 1e-6):
         return None
     return (lat, lon)
+
+
+def _lonlat(ref: tuple[float, float], x: float, y: float) -> list[float]:
+    lat, lon = local_to_wgs84(ref, x, y)
+    return [round(lon, 8), round(lat, 8)]
+
+
+def parse_area_params(payload: Any, requested_id: int) -> dict[str, Any] | None:
+    """``read_area_params`` data, or None when the robot answered with defaults.
+
+    An unknown id still answers state 0, with default settings and ``id`` 0.
+    """
+    if not isinstance(payload, Mapping):
+        return None
+    if _int_or_none(payload.get("id")) != requested_id:
+        return None
+    return dict(payload)
 
 
 def parse_site_map(obj: Mapping[str, Any]) -> SiteMap:
