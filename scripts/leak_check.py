@@ -98,7 +98,7 @@ def main() -> int:
         )
         return 0
     coords, serials = needles_from(args.captures)
-    files = sorted((ROOT / "protocol").rglob("*.jsonl")) + [ROOT / "protocol" / "fields.yaml"]
+    files = [*sorted((ROOT / "protocol").rglob("*.jsonl")), ROOT / "protocol" / "fields.yaml"]
     for extra in args.paths:
         files.extend(sorted(extra.rglob("*.jsonl")) if extra.is_dir() else [extra])
     bad = {}
