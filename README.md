@@ -46,6 +46,7 @@ uv run yarbo-local probe 192.168.40.23 get_device_msg
 import asyncio
 from yarbo_local import YarboRobot
 
+
 async def main() -> None:
     async with YarboRobot.for_host("192.168.50.184") as robot:
         state = await robot.snapshot()
@@ -54,6 +55,7 @@ async def main() -> None:
             print(plan.id, plan.name)
         robot.on_state(lambda s: print("changed:", s.activity))
         await asyncio.sleep(30)
+
 
 asyncio.run(main())
 ```
