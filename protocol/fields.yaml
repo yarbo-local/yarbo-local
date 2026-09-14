@@ -21,16 +21,16 @@ fields:
     - str
     example: ''
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
   BatteryMSG.capacity:
     types:
     - int
     example: 100
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: battery
@@ -44,8 +44,8 @@ fields:
     - int
     example: -300
     seen:
-      push: 1
-      snapshot: 2
+      push: 10
+      snapshot: 4
     status: verified
     entity: sensor
     device_class: current
@@ -61,7 +61,7 @@ fields:
     example: 100
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: sensor
     unit: '%'
@@ -73,7 +73,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: binary_sensor
     enabled: false
@@ -84,8 +84,8 @@ fields:
     - int
     example: 1
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: binary_sensor
     device_class: battery_charging
@@ -99,8 +99,8 @@ fields:
     - int
     example: 0
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: binary_sensor
     device_class: problem
@@ -112,7 +112,7 @@ fields:
     example: 27
     seen:
       push: 1
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: temperature
@@ -126,7 +126,7 @@ fields:
     example: 27
     seen:
       push: 1
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: temperature
@@ -140,7 +140,7 @@ fields:
     example: 28
     seen:
       push: 1
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: temperature
@@ -154,7 +154,7 @@ fields:
     example: 29
     seen:
       push: 22
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: temperature
@@ -168,7 +168,7 @@ fields:
     example: 28
     seen:
       push: 1
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: temperature
@@ -182,7 +182,7 @@ fields:
     example: 28
     seen:
       push: 1
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: temperature
@@ -195,16 +195,16 @@ fields:
     - float
     example: 1788809716.8415608
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
   BatteryMSG.voltage:
     types:
     - int
-    example: 41000
+    example: 41100
     seen:
       push: 1
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: sensor
     device_class: voltage
@@ -219,7 +219,7 @@ fields:
     example: 1
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   BodyMsg.body_stop_button_state:
     types:
@@ -227,7 +227,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: binary_sensor
     device_class: safety
@@ -239,7 +239,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: binary_sensor
     enabled: false
@@ -251,7 +251,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: binary_sensor
     device_class: problem
@@ -263,7 +263,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: binary_sensor
     device_class: problem
@@ -275,7 +275,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: binary_sensor
     device_class: problem
@@ -286,14 +286,14 @@ fields:
     - int
     example: 3
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: null
     codes: BodyMsg.recharge_state
     notes: Community mapping says 1 and 3 mean wired charging and block plan start. Observed 3 while the robot sat
-      free-standing off any charger and discharging, so that mapping is wrong on 3.14.11. Meaning unknown; not used
-      for anything.
+      free-standing off any charger and discharging, and 0 on the dock at 100%, so that mapping is wrong on 3.14.11.
+      Meaning unknown; not used for anything.
     source: community (contradicted)
   BodyMsg.right_wheel_fault_state:
     types:
@@ -301,7 +301,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: binary_sensor
     device_class: problem
@@ -310,10 +310,10 @@ fields:
   BodyMsg.timestamp:
     types:
     - float
-    example: 1788809405.6763203
+    example: 1789407974.8398833
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   BodyVersionMsg.body_fw_version:
     types:
@@ -321,7 +321,7 @@ fields:
     example: 3.2.26
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: update
     enabled: true
@@ -333,23 +333,23 @@ fields:
     example: REDACTED
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   BodyVersionMsg.timestamp:
     types:
     - float
-    example: 1788809404.6747198
+    example: 1789407974.2418377
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   CombinedOdom.phi:
     types:
     - float
     example: -0.202
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: verified
     entity: sensor
     unit: rad
@@ -359,18 +359,18 @@ fields:
   CombinedOdom.timestamp:
     types:
     - float
-    example: 1788809405687.088
+    example: 1789407975142.053
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   CombinedOdom.x:
     types:
     - float
     example: 14.247
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: sensor
     unit: m
@@ -382,8 +382,8 @@ fields:
     - float
     example: 2.942
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: sensor
     unit: m
@@ -396,7 +396,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   DebugMsg.debug_para10:
     types:
@@ -404,7 +404,7 @@ fields:
     example: 1
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   DebugMsg.debug_para11:
     types:
@@ -412,15 +412,15 @@ fields:
     example: 255
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   DebugMsg.debug_para12:
     types:
     - int
-    example: 0
+    example: 3
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   DebugMsg.debug_para2:
     types:
@@ -428,7 +428,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   DebugMsg.debug_para3:
     types:
@@ -436,7 +436,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   DebugMsg.debug_para4:
     types:
@@ -444,7 +444,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   DebugMsg.debug_para5:
     types:
@@ -452,7 +452,7 @@ fields:
     example: 5
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   DebugMsg.debug_para6:
     types:
@@ -460,7 +460,7 @@ fields:
     example: 115
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   DebugMsg.debug_para7:
     types:
@@ -468,7 +468,7 @@ fields:
     example: 255
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   DebugMsg.debug_para8:
     types:
@@ -476,7 +476,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   DebugMsg.debug_para9:
     types:
@@ -484,23 +484,23 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   DebugMsg.timestamp:
     types:
     - float
-    example: 1788809405.5372767
+    example: 1789407975.0398662
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   EletricMSG.body_ambient_ntc_temp:
     types:
     - float
-    example: 27.0
+    example: 26.0
     seen:
       push: 1
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: temperature
@@ -513,7 +513,7 @@ fields:
     example: 0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: current
@@ -527,7 +527,7 @@ fields:
     example: 0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   EletricMSG.current_chute:
     types:
@@ -535,15 +535,15 @@ fields:
     example: 0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   EletricMSG.lwheel_current:
     types:
     - float
     example: 0.024000000208616257
     seen:
-      push: 34
-      snapshot: 2
+      push: 76
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: current
@@ -557,7 +557,7 @@ fields:
     example: -40.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: temperature
@@ -572,7 +572,7 @@ fields:
     example: -40.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: temperature
@@ -587,7 +587,7 @@ fields:
     example: 0.0019335937686264515
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: current
@@ -600,8 +600,8 @@ fields:
     - float
     example: 0.024000000208616257
     seen:
-      push: 1
-      snapshot: 2
+      push: 27
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: current
@@ -612,10 +612,10 @@ fields:
   EletricMSG.timestamp:
     types:
     - float
-    example: 1788809405.6972616
+    example: 1789407975.139906
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HeadAndVersionCheck.head_firmware_version:
     types:
@@ -623,7 +623,7 @@ fields:
     example: 0.0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: update
     enabled: true
@@ -634,7 +634,7 @@ fields:
     example: ''
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HeadAndVersionCheck.self_check:
     types:
@@ -642,15 +642,15 @@ fields:
     example: 0.0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HeadAndVersionCheck.timestamp:
     types:
     - float
-    example: 1788809404.6767335
+    example: 1789407974.258667
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HeadMsg.head_community_state:
     types:
@@ -658,7 +658,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HeadMsg.head_crash_sensor:
     types:
@@ -666,7 +666,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HeadMsg.head_led_brightness:
     types:
@@ -674,7 +674,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HeadMsg.head_ntc_status:
     types:
@@ -682,7 +682,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HeadMsg.head_stop_singnal_state:
     types:
@@ -690,15 +690,15 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HeadMsg.head_type:
     types:
     - int
     example: 0
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: enum
@@ -711,7 +711,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HeadMsg.roll_motor_fault_status:
     types:
@@ -719,7 +719,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HeadMsg.snowbot_motor_temp_state:
     types:
@@ -727,7 +727,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HeadMsg.throw_pipe_fault_status:
     types:
@@ -735,23 +735,23 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HeadMsg.timestamp:
     types:
     - float
-    example: 1788809405.6472464
+    example: 1789407975.0303164
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HeadSerialMsg.head_sn:
     types:
     - str
     example: REDACTED
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: sensor
     enabled: false
@@ -764,7 +764,7 @@ fields:
     example: 1
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HubInfoMSG.body_left_camera:
     types:
@@ -772,7 +772,7 @@ fields:
     example: 1
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HubInfoMSG.body_right_camera:
     types:
@@ -780,7 +780,7 @@ fields:
     example: 1
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HubInfoMSG.head_camera_heating:
     types:
@@ -788,7 +788,7 @@ fields:
     example: 1
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HubInfoMSG.head_camera_power:
     types:
@@ -796,7 +796,7 @@ fields:
     example: 1
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HubInfoMSG.joy_usb:
     types:
@@ -804,7 +804,7 @@ fields:
     example: 1
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HubInfoMSG.led_top_blink:
     types:
@@ -812,7 +812,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HubInfoMSG.led_top_dur_off:
     types:
@@ -820,7 +820,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HubInfoMSG.led_top_dur_on:
     types:
@@ -828,7 +828,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HubInfoMSG.led_top_switch:
     types:
@@ -836,7 +836,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HubInfoMSG.loud:
     types:
@@ -844,7 +844,7 @@ fields:
     example: 1
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HubInfoMSG.radar_power:
     types:
@@ -852,7 +852,7 @@ fields:
     example: 1
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HubInfoMSG.rtk1:
     types:
@@ -860,7 +860,7 @@ fields:
     example: 1
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HubInfoMSG.rtk2:
     types:
@@ -868,7 +868,7 @@ fields:
     example: 1
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HubInfoMSG.usb6:
     types:
@@ -876,7 +876,7 @@ fields:
     example: 1
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   HubInfoMSG.voice_module:
     types:
@@ -884,7 +884,7 @@ fields:
     example: 1
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   LedInfoMSG.body_left_b:
     types:
@@ -892,7 +892,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   LedInfoMSG.body_left_d:
     types:
@@ -900,7 +900,7 @@ fields:
     example: 255
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   LedInfoMSG.body_left_g:
     types:
@@ -908,7 +908,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   LedInfoMSG.body_left_r:
     types:
@@ -916,7 +916,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   LedInfoMSG.body_right_b:
     types:
@@ -924,7 +924,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   LedInfoMSG.body_right_d:
     types:
@@ -932,7 +932,7 @@ fields:
     example: 255
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   LedInfoMSG.body_right_g:
     types:
@@ -940,7 +940,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   LedInfoMSG.body_right_r:
     types:
@@ -948,7 +948,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   LedInfoMSG.led_head:
     types:
@@ -956,7 +956,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: light
     enabled: false
@@ -968,7 +968,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: light
     enabled: false
@@ -980,7 +980,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: light
     enabled: false
@@ -992,7 +992,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   LedInfoMSG.tail_left_d:
     types:
@@ -1000,7 +1000,7 @@ fields:
     example: 255
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   LedInfoMSG.tail_left_g:
     types:
@@ -1008,7 +1008,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   LedInfoMSG.tail_left_r:
     types:
@@ -1016,7 +1016,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   LedInfoMSG.tail_right_b:
     types:
@@ -1024,7 +1024,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   LedInfoMSG.tail_right_d:
     types:
@@ -1032,7 +1032,7 @@ fields:
     example: 255
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   LedInfoMSG.tail_right_g:
     types:
@@ -1040,7 +1040,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   LedInfoMSG.tail_right_r:
     types:
@@ -1048,7 +1048,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   NetMSG.dns:
     types:
@@ -1056,7 +1056,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: binary_sensor
     device_class: connectivity
@@ -1069,7 +1069,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: binary_sensor
     device_class: connectivity
@@ -1083,7 +1083,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: binary_sensor
     device_class: connectivity
@@ -1093,10 +1093,10 @@ fields:
   NetMSG.timestamp:
     types:
     - float
-    example: 1788787322.6104348
+    example: 1789407975.0319629
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RTKMSG.Point.phi:
     types:
@@ -1104,7 +1104,7 @@ fields:
     example: 0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RTKMSG.Point.timestamp:
     types:
@@ -1112,31 +1112,31 @@ fields:
     example: 0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RTKMSG.Point.x:
     types:
     - float
-    example: 11.03
+    example: 0.028
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RTKMSG.Point.y:
     types:
     - float
-    example: 3.575
+    example: 0.023
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RTKMSG.gga_atn_dis:
     types:
     - float
     example: 1.297
     seen:
-      push: 71
-      snapshot: 2
+      push: 147
+      snapshot: 4
     status: candidate
     entity: sensor
     unit: m
@@ -1147,18 +1147,18 @@ fields:
   RTKMSG.head_inweek:
     types:
     - float
-    example: 0.6000000000058208
+    example: 0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RTKMSG.heading:
     types:
     - float
     example: 353.8175
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: verified
     entity: sensor
     unit: °
@@ -1170,16 +1170,16 @@ fields:
     - float
     example: 1.297
     seen:
-      push: 71
-      snapshot: 2
+      push: 147
+      snapshot: 4
     status: candidate
   RTKMSG.heading_dop:
     types:
     - float
     example: 10.9489
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: sensor
     enabled: false
@@ -1190,24 +1190,24 @@ fields:
     - int
     example: 27
     seen:
-      push: 5
-      snapshot: 2
+      push: 14
+      snapshot: 4
     status: candidate
   RTKMSG.heading_obs:
     types:
     - int
-    example: 29
+    example: 33
     seen:
-      push: 3
-      snapshot: 2
+      push: 7
+      snapshot: 4
     status: candidate
   RTKMSG.heading_status:
     types:
     - int
     example: -1
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: sensor
     enabled: false
@@ -1216,42 +1216,42 @@ fields:
   RTKMSG.hgt:
     types:
     - float
-    example: 86.50599670410156
+    example: 87.54100036621094
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RTKMSG.lan:
     types:
     - float
-    example: 50.50066912133334
+    example: 89.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RTKMSG.lon:
     types:
     - float
-    example: 24.070256822499985
+    example: -94.0716092705
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RTKMSG.pos_utc:
     types:
     - float
-    example: 0.59375
+    example: 0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RTKMSG.pre4_timestamp:
     types:
     - float
-    example: 1788787338.026753
+    example: 1789407974.9685764
     seen:
-      push: 1
-      snapshot: 2
+      push: 77
+      snapshot: 4
     status: candidate
   RTKMSG.pre_status:
     types:
@@ -1259,7 +1259,7 @@ fields:
     example: '-1'
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RTKMSG.ref_update:
     types:
@@ -1267,23 +1267,23 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RTKMSG.rtk_version:
     types:
     - str
     example: ''
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
   RTKMSG.sat_num:
     types:
     - int
     example: 27
     seen:
-      push: 4
-      snapshot: 2
+      push: 8
+      snapshot: 4
     status: candidate
     entity: sensor
     enabled: false
@@ -1294,8 +1294,8 @@ fields:
     - str
     example: '5'
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: enum
@@ -1306,10 +1306,10 @@ fields:
   RTKMSG.statush:
     types:
     - str
-    example: '1'
+    example: '4'
     seen:
       push: 3
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: sensor
     enabled: false
@@ -1321,8 +1321,8 @@ fields:
     - float
     example: 1788809717.0160167
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
   RTKMSG.update_mode:
     types:
@@ -1330,7 +1330,7 @@ fields:
     example: 1
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.body_hook_status:
     types:
@@ -1338,15 +1338,15 @@ fields:
     example: 1
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.chute_angle:
     types:
     - int
     example: 0
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: sensor
     unit: °
@@ -1359,15 +1359,15 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.chute_steering_engine_info:
     types:
     - int
     example: 0
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
   RunningStatusMSG.chute_steering_reset_status:
     types:
@@ -1375,7 +1375,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.chute_steering_run_status:
     types:
@@ -1383,111 +1383,111 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.elec_navigation_front_right_sensor:
     types:
     - int
     example: 11
     seen:
-      push: 44
-      snapshot: 2
+      push: 99
+      snapshot: 4
     status: candidate
   RunningStatusMSG.elec_navigation_rear_right_sensor:
     types:
     - int
     example: 3
     seen:
-      push: 37
-      snapshot: 2
+      push: 113
+      snapshot: 4
     status: candidate
   RunningStatusMSG.gyro_acc_x:
     types:
     - float
-    example: -0.49916398525238037
+    example: 0.5718780159950256
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.gyro_acc_y:
     types:
     - float
-    example: 0.16663900017738342
+    example: -0.10038699954748154
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.gyro_acc_z:
     types:
     - float
-    example: -9.837603569030762
+    example: -9.847346305847168
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.gyro_ang_vel_x:
     types:
     - float
-    example: -0.09331800043582916
+    example: -0.20497499406337738
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.gyro_ang_vel_y:
     types:
     - float
-    example: 0.33978399634361267
+    example: 0.29105299711227417
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.gyro_ang_vel_z:
     types:
     - float
-    example: 0.12948200106620789
+    example: 0.15242800116539001
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.gyro_pitch:
     types:
     - float
-    example: 2.892669677734375
+    example: -3.3124237060546875
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.gyro_roll:
     types:
     - float
-    example: -0.9102770090103149
+    example: 0.5547239780426025
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.gyro_timestamp:
     types:
     - int
-    example: 1788809405787157
+    example: 1789407975239841
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.gyro_yaw:
     types:
     - float
-    example: -124.87279510498047
+    example: -18.018890380859375
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.head_gyro_pitch:
     types:
     - float
     example: 0.0
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: sensor
     unit: °
@@ -1499,8 +1499,8 @@ fields:
     - float
     example: 0.0
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: sensor
     unit: °
@@ -1513,7 +1513,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: binary_sensor
     enabled: false
@@ -1524,7 +1524,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.pitch_angle_motor_err:
     types:
@@ -1532,7 +1532,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.plower_dir:
     types:
@@ -1540,7 +1540,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.plower_lift:
     types:
@@ -1548,7 +1548,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.push_pod_status:
     types:
@@ -1556,7 +1556,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.push_rod_err:
     types:
@@ -1564,7 +1564,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.push_rod_place:
     types:
@@ -1572,7 +1572,7 @@ fields:
     example: 45
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.push_rod_reset_status:
     types:
@@ -1580,15 +1580,15 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.rain_sensor_data:
     types:
     - int
     example: 0
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: sensor
     enabled: false
@@ -1600,7 +1600,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.snow_pipe_motor_err:
     types:
@@ -1608,7 +1608,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.snow_pipe_run_status:
     types:
@@ -1616,7 +1616,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.snow_roller_motor:
     types:
@@ -1624,7 +1624,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.snow_roller_motor_err:
     types:
@@ -1632,15 +1632,15 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.timestamp:
     types:
     - float
-    example: 1788809405.697241
+    example: 1789407975.1398695
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.trimmer_comm_status:
     types:
@@ -1648,7 +1648,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   RunningStatusMSG.version_info:
     types:
@@ -1656,7 +1656,7 @@ fields:
     example: '0.0'
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   SoftwareUpdate.download_size:
     types:
@@ -1664,7 +1664,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: sensor
     enabled: false
@@ -1676,7 +1676,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: sensor
     unit: s
@@ -1689,7 +1689,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: binary_sensor
     device_class: update
@@ -1701,16 +1701,16 @@ fields:
     - int
     example: 0
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
   StateMSG.auto_draw_waiting_state:
     types:
     - int
     example: 0
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
   StateMSG.auto_hump_check:
     types:
@@ -1718,15 +1718,15 @@ fields:
     example: false
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   StateMSG.car_controller:
     types:
     - bool
     example: false
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: binary_sensor
     enabled: false
@@ -1738,8 +1738,8 @@ fields:
     - int
     example: 0
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: binary_sensor
     device_class: battery_charging
@@ -1753,7 +1753,7 @@ fields:
     example: false
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: switch
     enabled: true
@@ -1765,7 +1765,7 @@ fields:
     example: false
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   StateMSG.en_hump_check:
     types:
@@ -1773,15 +1773,15 @@ fields:
     example: true
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   StateMSG.en_state_led:
     types:
     - bool
     example: true
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: verified
     entity: switch
     enabled: false
@@ -1792,8 +1792,8 @@ fields:
     - bool
     example: true
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: verified
     entity: switch
     enabled: false
@@ -1805,7 +1805,7 @@ fields:
     example: true
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: switch
     enabled: true
@@ -1816,8 +1816,8 @@ fields:
     - int
     example: 0
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: sensor
     enabled: true
@@ -1828,8 +1828,8 @@ fields:
     - int
     example: -1
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
   StateMSG.feedback_keepalive_active:
     types:
@@ -1837,7 +1837,7 @@ fields:
     example: false
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   StateMSG.get_rid_warning:
     types:
@@ -1845,7 +1845,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   StateMSG.is_animal:
     types:
@@ -1853,7 +1853,7 @@ fields:
     example: false
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: binary_sensor
     device_class: occupancy
@@ -1865,7 +1865,7 @@ fields:
     example: false
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: binary_sensor
     device_class: occupancy
@@ -1876,8 +1876,8 @@ fields:
     - bool
     example: false
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: verified
     entity: binary_sensor
     device_class: problem
@@ -1888,8 +1888,8 @@ fields:
     - bool
     example: false
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: verified
     entity: binary_sensor
     enabled: false
@@ -1901,7 +1901,7 @@ fields:
     example: false
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: switch
     enabled: false
@@ -1912,8 +1912,8 @@ fields:
     - int
     example: 1
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: verified
     entity: sensor
     enabled: false
@@ -1926,15 +1926,15 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   StateMSG.need_back_to_ds:
     types:
     - bool
     example: false
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: verified
     entity: binary_sensor
     enabled: false
@@ -1944,8 +1944,8 @@ fields:
     - bool
     example: false
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
   StateMSG.obstacle:
     types:
@@ -1953,7 +1953,7 @@ fields:
     example: false
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: binary_sensor
     enabled: false
@@ -1964,7 +1964,7 @@ fields:
     example: false
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: switch
     enabled: false
@@ -1975,8 +1975,8 @@ fields:
     - int
     example: 0
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: enum
@@ -1988,8 +1988,8 @@ fields:
     - int
     example: 0
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: enum
@@ -2001,8 +2001,8 @@ fields:
     - int
     example: 0
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: binary_sensor
     enabled: false
@@ -2012,8 +2012,8 @@ fields:
     - int
     example: 0
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
   StateMSG.pedestrian:
     types:
@@ -2021,7 +2021,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   StateMSG.person_detect_status:
     types:
@@ -2029,7 +2029,7 @@ fields:
     example: 1
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: switch
     enabled: true
@@ -2041,15 +2041,15 @@ fields:
     example: ''
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   StateMSG.planning_paused:
     types:
     - int
     example: 0
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: enum
@@ -2061,8 +2061,8 @@ fields:
     - bool
     example: false
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: switch
     enabled: false
@@ -2073,8 +2073,8 @@ fields:
     - int
     example: 0
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
   StateMSG.schedule_id:
     types:
@@ -2082,7 +2082,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: sensor
     enabled: false
@@ -2094,7 +2094,7 @@ fields:
     example: ''
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   StateMSG.schedule_state:
     types:
@@ -2102,7 +2102,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: sensor
     enabled: false
@@ -2114,7 +2114,7 @@ fields:
     example: 1
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: sensor
     enabled: false
@@ -2126,7 +2126,7 @@ fields:
     example: false
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: binary_sensor
     enabled: false
@@ -2137,7 +2137,7 @@ fields:
     example: false
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: binary_sensor
     enabled: false
@@ -2149,7 +2149,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: binary_sensor
     device_class: problem
@@ -2161,15 +2161,15 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   StateMSG.vision_auto_draw_state:
     types:
     - int
     example: 0
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
   StateMSG.voice_locale:
     types:
@@ -2177,7 +2177,7 @@ fields:
     example: auto
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: sensor
     enabled: false
@@ -2189,7 +2189,7 @@ fields:
     example: 1.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: number
     unit: '%'
@@ -2202,8 +2202,8 @@ fields:
     - int
     example: 1
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: verified
     entity: binary_sensor
     enabled: true
@@ -2215,8 +2215,8 @@ fields:
     - float
     example: 0.017615817487239838
     seen:
-      push: 37
-      snapshot: 2
+      push: 43
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: distance
@@ -2229,8 +2229,8 @@ fields:
     - float
     example: -0.017320770770311356
     seen:
-      push: 33
-      snapshot: 2
+      push: 58
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: distance
@@ -2244,7 +2244,7 @@ fields:
     example: 0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: sensor
     unit: m/s
@@ -2257,7 +2257,7 @@ fields:
     example: 0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: sensor
     unit: m/s
@@ -2267,10 +2267,10 @@ fields:
   WheelSpeedMSG.timestamp:
     types:
     - float
-    example: 1788809405.6972253
+    example: 1789407975.1398485
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   abnormal_msg.battery_community_state:
     types:
@@ -2278,15 +2278,15 @@ fields:
     example: 1
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   abnormal_msg.ctrl_error_code:
     types:
     - int
-    example: 0
+    example: 1
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   abnormal_msg.error_code:
     types:
@@ -2294,7 +2294,7 @@ fields:
     example: 0
     seen:
       push: 2
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: sensor
     enabled: false
@@ -2306,7 +2306,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   abnormal_msg.head_ntc_status:
     types:
@@ -2314,7 +2314,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   abnormal_msg.hub_reset_state:
     types:
@@ -2322,7 +2322,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   abnormal_msg.joy_state:
     types:
@@ -2330,7 +2330,7 @@ fields:
     example: 1
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   abnormal_msg.left_camera:
     types:
@@ -2338,7 +2338,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   abnormal_msg.left_motor_err:
     types:
@@ -2346,7 +2346,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: binary_sensor
     device_class: problem
@@ -2358,7 +2358,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   abnormal_msg.manufacturer_name:
     types:
@@ -2366,7 +2366,7 @@ fields:
     example: 1
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   abnormal_msg.middle_camera:
     types:
@@ -2374,7 +2374,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   abnormal_msg.mother_board_state:
     types:
@@ -2382,7 +2382,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   abnormal_msg.pitch_angle_motor_err:
     types:
@@ -2390,7 +2390,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   abnormal_msg.pitch_motor_fault_status:
     types:
@@ -2398,7 +2398,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   abnormal_msg.power_fault:
     types:
@@ -2406,7 +2406,7 @@ fields:
     example: -1
     seen:
       push: 2
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: binary_sensor
     device_class: problem
@@ -2419,7 +2419,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   abnormal_msg.push_rod_err:
     types:
@@ -2427,7 +2427,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   abnormal_msg.radar_state:
     types:
@@ -2435,7 +2435,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: binary_sensor
     device_class: problem
@@ -2447,7 +2447,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   abnormal_msg.right_motor_err:
     types:
@@ -2455,7 +2455,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: binary_sensor
     device_class: problem
@@ -2467,7 +2467,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   abnormal_msg.roll_motor_fault_status:
     types:
@@ -2475,7 +2475,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   abnormal_msg.rtcm_state:
     types:
@@ -2483,15 +2483,15 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   abnormal_msg.rtk_base_state:
     types:
     - int
-    example: 1
+    example: 0
     seen:
       push: 2
-      snapshot: 2
+      snapshot: 4
     status: candidate
   abnormal_msg.rtkrover_state:
     types:
@@ -2499,7 +2499,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   abnormal_msg.snow_pipe_motor_err:
     types:
@@ -2507,7 +2507,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   abnormal_msg.snow_roller_motor_err:
     types:
@@ -2515,7 +2515,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   abnormal_msg.snowbot_motor_temp_state:
     types:
@@ -2523,7 +2523,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   abnormal_msg.speaker_state:
     types:
@@ -2531,7 +2531,7 @@ fields:
     example: 1
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   abnormal_msg.throw_pipe_fault_status:
     types:
@@ -2539,7 +2539,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   base_name:
     types:
@@ -2547,7 +2547,7 @@ fields:
     example: REDACTED
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: null
     notes: Base station identifier; redacted.
@@ -2557,8 +2557,8 @@ fields:
     - int
     example: 7
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: verified
     entity: sensor
     enabled: false
@@ -2570,7 +2570,7 @@ fields:
     - str
     example: '4707284158465'
     seen:
-      push: 73
+      push: 149
       snapshot: 0
     status: candidate
   ble_version:
@@ -2579,7 +2579,7 @@ fields:
     example: 0.0.0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: sensor
     enabled: false
@@ -2590,7 +2590,7 @@ fields:
     - str
     example: '0'
     seen:
-      push: 73
+      push: 149
       snapshot: 0
     status: candidate
   camera_state.cam_b_mac:
@@ -2599,7 +2599,7 @@ fields:
     example: ''
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   camera_state.cam_b_state:
     types:
@@ -2607,7 +2607,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   camera_state.cam_b_version:
     types:
@@ -2615,7 +2615,7 @@ fields:
     example: ''
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   camera_state.cam_l_mac:
     types:
@@ -2623,7 +2623,7 @@ fields:
     example: ''
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   camera_state.cam_l_state:
     types:
@@ -2631,7 +2631,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   camera_state.cam_l_version:
     types:
@@ -2639,7 +2639,7 @@ fields:
     example: ''
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   camera_state.cam_m_mac:
     types:
@@ -2647,7 +2647,7 @@ fields:
     example: ''
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   camera_state.cam_m_state:
     types:
@@ -2655,7 +2655,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   camera_state.cam_m_version:
     types:
@@ -2663,7 +2663,7 @@ fields:
     example: ''
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   camera_state.cam_r_mac:
     types:
@@ -2671,7 +2671,7 @@ fields:
     example: ''
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   camera_state.cam_r_state:
     types:
@@ -2679,7 +2679,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   camera_state.cam_r_version:
     types:
@@ -2687,7 +2687,7 @@ fields:
     example: ''
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   car_info.in_plan_action:
     types:
@@ -2695,7 +2695,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   car_info.is_car:
     types:
@@ -2703,7 +2703,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   chassis_version_msg.firmware_version:
     types:
@@ -2711,7 +2711,7 @@ fields:
     example: 2.1.40
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: sensor
     enabled: false
@@ -2720,18 +2720,18 @@ fields:
   chassis_version_msg.timestamp:
     types:
     - float
-    example: 1788809404.7329328
+    example: 1789407974.1052258
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   combined_odom_confidence:
     types:
     - float
     example: 0.10000000149011612
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: sensor
     enabled: false
@@ -2742,8 +2742,8 @@ fields:
     - str
     example: 1.1.11
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: verified
     entity: sensor
     enabled: false
@@ -2755,8 +2755,8 @@ fields:
     - int
     example: 1
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: switch
     enabled: false
@@ -2769,7 +2769,7 @@ fields:
     example: 9
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: sensor
     enabled: false
@@ -2782,7 +2782,7 @@ fields:
     example: REDACTED
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: null
     notes: Base station HaLow SSID equals base_name; redacted.
@@ -2793,7 +2793,7 @@ fields:
     example: -43
     seen:
       push: 2
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: signal_strength
@@ -2806,7 +2806,7 @@ fields:
     example: ''
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   hardware_version.head_version:
     types:
@@ -2814,7 +2814,7 @@ fields:
     example: ''
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   hardware_version.radar_version:
     types:
@@ -2822,7 +2822,7 @@ fields:
     example: ''
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   hardware_version.timestamp:
     types:
@@ -2830,15 +2830,15 @@ fields:
     example: 0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   ipcamera_ota_switch:
     types:
     - int
     example: 0
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: switch
     enabled: false
@@ -2850,7 +2850,7 @@ fields:
     - str
     example: '69666'
     seen:
-      push: 73
+      push: 149
       snapshot: 0
     status: candidate
   min_app_version:
@@ -2859,7 +2859,7 @@ fields:
     example: 3.9.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: null
     notes: 3.9.0 observed.
@@ -2870,7 +2870,7 @@ fields:
     example: REDACTED
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   modebase_info.ModeBase:
     types:
@@ -2878,7 +2878,7 @@ fields:
     example: '{"latitude":"999.999","longitude":"999.999","altitude":"-1000.0","timestamp":"1986-10-15 07:33:52.472527"}'
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   motor_info.chute_motor:
     types:
@@ -2886,7 +2886,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   motor_info.chute_pitch_angle_motor:
     types:
@@ -2894,7 +2894,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   motor_info.electrical_ctrl:
     types:
@@ -2902,7 +2902,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   motor_info.gyro:
     types:
@@ -2910,7 +2910,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   motor_info.motion_motor:
     types:
@@ -2918,7 +2918,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   motor_info.push_rod_motor:
     types:
@@ -2926,7 +2926,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   motor_info.roller_motor:
     types:
@@ -2934,7 +2934,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   motor_info.timestamp:
     types:
@@ -2942,7 +2942,7 @@ fields:
     example: 0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   motor_info.wireless_recharge:
     types:
@@ -2950,7 +2950,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   mower_head_info01.lift_motor_current:
     types:
@@ -2958,7 +2958,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   mower_head_info01.lift_motor_err:
     types:
@@ -2966,7 +2966,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   mower_head_info01.lift_motor_over_current_info:
     types:
@@ -2974,7 +2974,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   mower_head_info01.lift_motor_place:
     types:
@@ -2982,7 +2982,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   mower_head_info01.lift_motor_reset_status:
     types:
@@ -2990,7 +2990,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   mower_head_info01.lift_motor_run_status:
     types:
@@ -2998,7 +2998,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   mower_head_info01.rain_sensor:
     types:
@@ -3006,7 +3006,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: binary_sensor
     device_class: moisture
@@ -3021,7 +3021,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   mower_head_info02.middle_blade_motor_current:
     types:
@@ -3029,7 +3029,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   mower_head_info02.middle_blade_motor_err:
     types:
@@ -3037,7 +3037,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   mower_head_info02.middle_blade_motor_over_current_info:
     types:
@@ -3045,7 +3045,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   mower_head_info02.middle_blade_motor_rpm:
     types:
@@ -3053,7 +3053,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   mower_head_info02.middle_blade_motor_speed:
     types:
@@ -3061,7 +3061,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   mower_head_info02.middle_blade_motor_temp:
     types:
@@ -3069,7 +3069,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   mower_head_info02.middle_blade_motor_temp_status:
     types:
@@ -3077,7 +3077,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   mower_head_info03.left_blade_motor_current:
     types:
@@ -3085,7 +3085,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: current
@@ -3102,7 +3102,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   mower_head_info03.left_blade_motor_over_current_info:
     types:
@@ -3110,7 +3110,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   mower_head_info03.left_blade_motor_rpm:
     types:
@@ -3118,7 +3118,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: sensor
     unit: rpm
@@ -3134,7 +3134,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: sensor
     unit: '%'
@@ -3149,7 +3149,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   mower_head_info03.left_blade_motor_temp_status:
     types:
@@ -3157,7 +3157,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   mower_head_info04.right_blade_motor_current:
     types:
@@ -3165,7 +3165,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: current
@@ -3182,7 +3182,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   mower_head_info04.right_blade_motor_over_current_info:
     types:
@@ -3190,7 +3190,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   mower_head_info04.right_blade_motor_rpm:
     types:
@@ -3198,7 +3198,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: sensor
     unit: rpm
@@ -3213,7 +3213,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: sensor
     unit: '%'
@@ -3228,7 +3228,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   mower_head_info04.right_blade_motor_temp_status:
     types:
@@ -3236,14 +3236,14 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   ms:
     types:
     - str
     example: '0'
     seen:
-      push: 73
+      push: 149
       snapshot: 0
     status: candidate
   net_module_status.lte_csq:
@@ -3252,7 +3252,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   net_module_status.lte_iccid:
     types:
@@ -3260,7 +3260,7 @@ fields:
     example: REDACTED
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: null
     notes: SIM identifier; redacted, never expose.
@@ -3271,7 +3271,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   net_module_status.lte_rsrp:
     types:
@@ -3279,7 +3279,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   net_module_status.lte_rsrq:
     types:
@@ -3287,7 +3287,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   net_module_status.lte_rssi:
     types:
@@ -3295,7 +3295,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: signal_strength
@@ -3309,7 +3309,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   net_module_status.lte_status:
     types:
@@ -3317,15 +3317,15 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   net_type:
     types:
     - int
-    example: -1804264336
+    example: 2072946313
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   ntrip_server_type:
     types:
@@ -3333,7 +3333,7 @@ fields:
     example: US
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: sensor
     enabled: false
@@ -3344,16 +3344,16 @@ fields:
     - float
     example: 0.00015001354040578008
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
   route_priority.hg0:
     types:
     - int
     example: 10
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: sensor
     enabled: false
@@ -3365,8 +3365,8 @@ fields:
     - int
     example: 600
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: sensor
     enabled: false
@@ -3378,8 +3378,8 @@ fields:
     - int
     example: -1
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: sensor
     enabled: false
@@ -3392,8 +3392,8 @@ fields:
     - float
     example: 2.0
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: sensor
     unit: s
@@ -3407,7 +3407,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_client_state.mode_base_ret:
     types:
@@ -3415,7 +3415,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_client_state.source_type:
     types:
@@ -3423,15 +3423,15 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_info.current_source_type:
     types:
     - int
     example: 2
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: sensor
     enabled: false
@@ -3443,7 +3443,7 @@ fields:
     example: 0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.lora.interval_max:
     types:
@@ -3451,7 +3451,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.lora.lost_count:
     types:
@@ -3459,7 +3459,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.lora.lost_rate:
     types:
@@ -3467,7 +3467,7 @@ fields:
     example: 0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.lora.pass_count:
     types:
@@ -3475,7 +3475,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.lora.size_avg:
     types:
@@ -3483,7 +3483,7 @@ fields:
     example: 0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.lora.size_max:
     types:
@@ -3491,7 +3491,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.lora.size_min:
     types:
@@ -3499,7 +3499,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.lora.total_count:
     types:
@@ -3507,7 +3507,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.lora.wm_sum:
     types:
@@ -3515,7 +3515,7 @@ fields:
     example: 0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.manual.interval_avg:
     types:
@@ -3523,7 +3523,7 @@ fields:
     example: 0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.manual.interval_max:
     types:
@@ -3531,7 +3531,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.manual.lost_count:
     types:
@@ -3539,7 +3539,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.manual.lost_rate:
     types:
@@ -3547,7 +3547,7 @@ fields:
     example: 0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.manual.pass_count:
     types:
@@ -3555,7 +3555,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.manual.size_avg:
     types:
@@ -3563,7 +3563,7 @@ fields:
     example: 0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.manual.size_max:
     types:
@@ -3571,7 +3571,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.manual.size_min:
     types:
@@ -3579,7 +3579,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.manual.total_count:
     types:
@@ -3587,7 +3587,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.manual.wm_sum:
     types:
@@ -3595,7 +3595,7 @@ fields:
     example: 0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.ntrip.interval_avg:
     types:
@@ -3603,7 +3603,7 @@ fields:
     example: 0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.ntrip.interval_max:
     types:
@@ -3611,7 +3611,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.ntrip.lost_count:
     types:
@@ -3619,7 +3619,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.ntrip.lost_rate:
     types:
@@ -3627,7 +3627,7 @@ fields:
     example: 0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.ntrip.pass_count:
     types:
@@ -3635,7 +3635,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.ntrip.size_avg:
     types:
@@ -3643,7 +3643,7 @@ fields:
     example: 0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.ntrip.size_max:
     types:
@@ -3651,7 +3651,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.ntrip.size_min:
     types:
@@ -3659,7 +3659,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.ntrip.total_count:
     types:
@@ -3667,7 +3667,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.ntrip.wm_sum:
     types:
@@ -3675,7 +3675,7 @@ fields:
     example: 0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.total.interval_avg:
     types:
@@ -3683,7 +3683,7 @@ fields:
     example: 0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.total.interval_max:
     types:
@@ -3691,7 +3691,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.total.lost_count:
     types:
@@ -3699,7 +3699,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.total.lost_rate:
     types:
@@ -3707,7 +3707,7 @@ fields:
     example: 0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.total.pass_count:
     types:
@@ -3715,7 +3715,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.total.size_avg:
     types:
@@ -3723,7 +3723,7 @@ fields:
     example: 0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.total.size_max:
     types:
@@ -3731,7 +3731,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.total.size_min:
     types:
@@ -3739,7 +3739,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.total.total_count:
     types:
@@ -3747,7 +3747,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtcm_stats_queue.total.wm_sum:
     types:
@@ -3755,15 +3755,15 @@ fields:
     example: 0.0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   rtk_base_data.base.gngga:
     types:
     - str
     example: $GNGGA,193517.00,5030.0388,N,02404.2086,E,7,29,0.5,88.164,M,-29.094,M,,*61\r\n
     seen:
-      push: 67
-      snapshot: 2
+      push: 124
+      snapshot: 4
     status: verified
     entity: null
     notes: Base station GGA; fix quality 7 observed (fixed/manual position).
@@ -3773,8 +3773,8 @@ fields:
     - str
     example: $GNGGA,193517.00,5030.0396,N,02404.2126,E,5,26,0.6,87.577,M,-29.094,M,1.0,0000*4D\r\n
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: device_tracker
     enabled: true
@@ -3785,15 +3785,15 @@ fields:
     - str
     example: '#HEADINGA,COM2,0,50.5,FINESTEERING,2435,156935.000,00008000,000e,50912;SOL_COMPUTED,NARROW_FLOAT,1.296983,353.817535,-57.236397,0.0,10.948867,4.753886,\"0000\",27,26,27,26,08,00,77,37*a11e584e\r\n'
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
   s:
     types:
     - str
     example: '67108904'
     seen:
-      push: 73
+      push: 149
       snapshot: 0
     status: candidate
   sbs:
@@ -3801,7 +3801,7 @@ fields:
     - str
     example: '0'
     seen:
-      push: 73
+      push: 149
       snapshot: 0
     status: candidate
   system_info.cpu.Frequency:
@@ -3809,16 +3809,16 @@ fields:
     - str
     example: '1200000'
     seen:
-      push: 8
-      snapshot: 2
+      push: 14
+      snapshot: 4
     status: candidate
   system_info.cpu.Temperature:
     types:
     - str
     example: 44.384000 °C
     seen:
-      push: 7
-      snapshot: 2
+      push: 13
+      snapshot: 4
     status: verified
     entity: sensor
     device_class: temperature
@@ -3832,8 +3832,8 @@ fields:
     - float
     example: 23.9
     seen:
-      push: 12
-      snapshot: 2
+      push: 24
+      snapshot: 4
     status: candidate
     entity: sensor
     unit: '%'
@@ -3846,24 +3846,24 @@ fields:
     - int
     example: 174292
     seen:
-      push: 7
-      snapshot: 2
+      push: 11
+      snapshot: 4
     status: candidate
   system_info.mem.Cached:
     types:
     - int
     example: 3355696
     seen:
-      push: 12
-      snapshot: 2
+      push: 24
+      snapshot: 4
     status: candidate
   system_info.mem.MemAvailable:
     types:
     - int
     example: 6366748
     seen:
-      push: 12
-      snapshot: 2
+      push: 24
+      snapshot: 4
     status: candidate
     entity: sensor
     unit: kB
@@ -3875,8 +3875,8 @@ fields:
     - int
     example: 2700564
     seen:
-      push: 12
-      snapshot: 2
+      push: 24
+      snapshot: 4
     status: candidate
   system_info.mem.MemTotal:
     types:
@@ -3884,7 +3884,7 @@ fields:
     example: 8087964
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   system_info.mem.SwapCached:
     types:
@@ -3892,7 +3892,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   system_info.mem.SwapFree:
     types:
@@ -3900,7 +3900,7 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   system_info.mem.SwapTotal:
     types:
@@ -3908,15 +3908,15 @@ fields:
     example: 0
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   system_info.ros_dir_size:
     types:
     - int
-    example: 704397789
+    example: 817481801
     seen:
       push: 1
-      snapshot: 2
+      snapshot: 4
     status: candidate
   system_info.topProc:
     types:
@@ -3938,16 +3938,16 @@ fields:
       cpuUsage: 12.5
       pid: 28880
     seen:
-      push: 12
-      snapshot: 2
+      push: 24
+      snapshot: 4
     status: candidate
   system_info.userdata.disk.availableSize:
     types:
     - int
     example: 29134895104
     seen:
-      push: 12
-      snapshot: 2
+      push: 24
+      snapshot: 4
     status: candidate
     entity: sensor
     unit: B
@@ -3960,7 +3960,7 @@ fields:
     example: /userdata
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   system_info.userdata.disk.totalSize:
     types:
@@ -3968,23 +3968,23 @@ fields:
     example: 40782098432
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   system_info.userdata.disk.usedSize:
     types:
     - int
     example: 11647203328
     seen:
-      push: 12
-      snapshot: 2
+      push: 24
+      snapshot: 4
     status: candidate
   timestamp:
     types:
     - float
     example: 1788809717.0
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: verified
     entity: null
     notes: Epoch seconds of the frame.
@@ -3994,7 +3994,7 @@ fields:
     - str
     example: '0'
     seen:
-      push: 73
+      push: 149
       snapshot: 0
     status: candidate
   ultrasonic_msg.lf_dis:
@@ -4002,8 +4002,8 @@ fields:
     - int
     example: 0
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: distance
@@ -4017,8 +4017,8 @@ fields:
     - int
     example: 0
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: distance
@@ -4031,8 +4031,8 @@ fields:
     - int
     example: 0
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: distance
@@ -4046,7 +4046,7 @@ fields:
     example: 3.14.11
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
     entity: update
     enabled: true
@@ -4055,18 +4055,18 @@ fields:
   wireless_recharge.ctrl_error_code:
     types:
     - int
-    example: 0
+    example: 1
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   wireless_recharge.error_code:
     types:
     - int
     example: 0
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: sensor
     enabled: false
@@ -4078,15 +4078,15 @@ fields:
     example: 1
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate
   wireless_recharge.output_current:
     types:
     - int
     example: 53
     seen:
-      push: 1
-      snapshot: 2
+      push: 19
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: current
@@ -4098,10 +4098,10 @@ fields:
   wireless_recharge.output_voltage:
     types:
     - int
-    example: 15
+    example: 10
     seen:
-      push: 0
-      snapshot: 2
+      push: 8
+      snapshot: 4
     status: candidate
     entity: sensor
     device_class: voltage
@@ -4115,8 +4115,8 @@ fields:
     - int
     example: 0
     seen:
-      push: 73
-      snapshot: 2
+      push: 149
+      snapshot: 4
     status: candidate
     entity: sensor
     enabled: false
@@ -4125,10 +4125,10 @@ fields:
   wireless_recharge.temperature:
     types:
     - int
-    example: 60
+    example: 65
     seen:
       push: 1
-      snapshot: 2
+      snapshot: 4
     status: verified
     entity: sensor
     device_class: temperature
@@ -4139,8 +4139,8 @@ fields:
   wireless_recharge.timestamp:
     types:
     - float
-    example: 1788809405.577295
+    example: 1789407974.9595566
     seen:
       push: 0
-      snapshot: 2
+      snapshot: 4
     status: candidate

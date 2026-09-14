@@ -268,3 +268,19 @@ async def test_client_start_with_spawn_and_timeout(
 
 def test_topics_all_for_serial() -> None:
     assert topics.all_for("abc") == "snowbot/abc/#"
+
+
+async def test_sync_listener_returning_a_value(sim: Simulator, transport: FakeTransport) -> None:
+    """A plain callable that happens to return something (file.write) must not break dispatch."""
+    lines: list[str] = []
+    session = Session(transport, serial=sim.serial)
+    session.add_message_listener(lambda ev: len(ev.topic) + (lines.append(ev.leaf) or 0))
+    task = await _running(session)
+    sim.tick()
+    await session.wait_ready(1.0)
+    await session.request("read_all_plan", timeout=1.0)
+    assert "heart_beat" in lines
+    assert "data_feedback" in lines
+    session.stop()
+    transport.drop()
+    await asyncio.wait_for(task, 1.0)

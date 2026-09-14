@@ -39,8 +39,9 @@ BodyMsg.recharge_state:
   # Community mapping (1 wired_charging, 3 wired_charging_locked, blocks plan start)
   # is contradicted on 3.14.11: the value was 3 while the robot sat free-standing in
   # the garage, off any charger, with BatteryMSG.status 1, StateMSG.charging_status 0
-  # and the pack discharging at 0.3 A. Meaning unknown until captured on and off the dock.
-  observed: [3]
+  # and the pack discharging at 0.3 A. On the dock at 100% it read 0. Meaning unknown;
+  # it tracks docking somehow, the opposite way round from the community mapping.
+  observed: {off_dock: 3, on_dock_full: 0}
   notes: do not derive charging from this field
 
 

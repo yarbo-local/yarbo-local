@@ -13,6 +13,7 @@ import asyncio
 from collections.abc import AsyncIterator, Awaitable, Callable
 import contextlib
 from dataclasses import dataclass, field
+import inspect
 import secrets
 import ssl
 from typing import Protocol
@@ -174,7 +175,7 @@ class FakeTransport:
         self.published.append(Message(topic, payload, retain))
         if self.on_publish is not None:
             result = self.on_publish(topic, payload)
-            if result is not None:
+            if inspect.isawaitable(result):
                 await result
 
     async def messages(self) -> AsyncIterator[Message]:

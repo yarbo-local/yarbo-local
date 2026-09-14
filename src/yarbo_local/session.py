@@ -16,6 +16,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
+import inspect
 import logging
 import random
 import time
@@ -119,7 +120,7 @@ class Session:
         for cb in list(listeners):
             try:
                 result = cb(*args)
-                if result is not None:
+                if inspect.isawaitable(result):
                     await result
             except Exception:
                 _LOGGER.exception("listener %r failed", cb)

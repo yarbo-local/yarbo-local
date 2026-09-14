@@ -396,8 +396,8 @@ fields:
     entity: null
     codes: BodyMsg.recharge_state
     notes: Community mapping says 1 and 3 mean wired charging and block plan start. Observed 3 while the robot
-      sat free-standing off any charger and discharging, so that mapping is wrong on 3.14.11. Meaning unknown;
-      not used for anything.
+      sat free-standing off any charger and discharging, and 0 on the dock at 100%, so that mapping is wrong on
+      3.14.11. Meaning unknown; not used for anything.
     source: community (contradicted)
   BodyMsg.body_stop_button_state:
     entity: binary_sensor
