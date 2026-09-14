@@ -139,6 +139,24 @@ class Redactor:
             return f"${new_body}"  # sentence arrived without a checksum; keep it that way
         return f"${new_body}*{_nmea_checksum(new_body)}"
 
+    def _shift_text_coordinate(self, text: str, *, is_lat: bool) -> str:
+        """Shift a coordinate carried as text, keeping its precision.
+
+        Out-of-range placeholders such as ModeBase's ``"999.999"`` and zero stay
+        as they are; anything that is not a number is replaced outright.
+        """
+        stripped = text.strip()
+        try:
+            value = float(stripped)
+        except ValueError:
+            return "REDACTED" if stripped else text
+        limit = 90.0 if is_lat else 180.0
+        if value == 0 or abs(value) > limit:
+            return text
+        decimals = len(stripped.split(".", 1)[1]) if "." in stripped else 0
+        shifted = self.shift_lat(value) if is_lat else self.shift_lon(value)
+        return f"{shifted:.{decimals}f}"
+
     # -- generic walkers ---------------------------------------------------
 
     def redact_text(self, text: str) -> str:
@@ -169,6 +187,8 @@ class Redactor:
                     lowered in _LON_KEYS and isinstance(v, int | float) and not isinstance(v, bool)
                 ):
                     out[k] = self.shift_lon(float(v)) if v != 0 else v
+                elif lowered in _LAT_KEYS | _LON_KEYS and isinstance(v, str):
+                    out[k] = self._shift_text_coordinate(v, is_lat=lowered in _LAT_KEYS)
                 else:
                     out[k] = self.redact_value(v, lowered)
             return out

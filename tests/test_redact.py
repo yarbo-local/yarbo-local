@@ -109,3 +109,26 @@ def test_gga_without_checksum_and_camelcase_and_nested_json_string() -> None:
     assert "4807.0380" not in gga
     assert "01131.0000" not in gga
     assert "*" not in gga
+
+
+def test_text_coordinates_are_shifted_and_placeholders_kept() -> None:
+    r = Redactor(salt="t", lat_offset=1.25, lon_offset=-2.5)
+    out = r.redact_value(
+        {
+            "modebase_info": {
+                "ModeBase": json.dumps(
+                    {"latitude": "42.1234567", "longitude": "-71.7654321", "altitude": "88.1"}
+                )
+            },
+            "placeholder": {"latitude": "999.999", "longitude": "999.999"},
+            "zero": {"lat": "0", "lon": "0.0"},
+            "junk": {"latitude": "north-ish"},
+        }
+    )
+    inner = json.loads(out["modebase_info"]["ModeBase"])
+    assert inner["latitude"] == "43.3734567"
+    assert inner["longitude"] == "-74.2654321"
+    assert inner["altitude"] == "88.1"
+    assert out["placeholder"] == {"latitude": "999.999", "longitude": "999.999"}
+    assert out["zero"] == {"lat": "0", "lon": "0.0"}
+    assert out["junk"]["latitude"] == "REDACTED"
