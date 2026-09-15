@@ -393,6 +393,17 @@ commands:
     status: candidate
     observed: fixtures/3.14.11/mapping-area-app.jsonl
     source: app capture 2026-09-14
+  read_all_plan_history:
+    payload: {}
+    ack: data_feedback
+    controller: false
+    risk: safe
+    status: candidate
+    notes: >
+      Run history. Sent once on 3.14.11 (2026-09-15): state 0, {data: [one record per finished run]} with
+      times and battery per work segment, areas, progress, planned path and head settings; no obstacles.
+      Candidate until a redacted fixture exists.
+    source: steves2j command table
   del_nogozone:
     payload: {id: int}
     ack: data_feedback
