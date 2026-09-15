@@ -28,6 +28,7 @@ from .models import (
     SiteMap,
     Zone,
 )
+from .obstacles import Barrier, Detection, ObstacleTracker, Run
 from .registry import Command, Registry
 from .resolve import resolve
 from .session import Session
@@ -38,22 +39,26 @@ __version__ = "0.1.0.dev0"
 
 __all__ = [
     "Activity",
+    "Barrier",
     "ChargingPoint",
     "Command",
     "CommandError",
     "CommandRefusedError",
     "ConnectionLostError",
     "ControllerError",
+    "Detection",
     "FakeTransport",
     "Feedback",
     "GgaFix",
     "GpsReference",
     "MqttTransport",
+    "ObstacleTracker",
     "PlanSummary",
     "Registry",
     "ReplyTimeoutError",
     "RobotNotFoundError",
     "RobotState",
+    "Run",
     "Session",
     "Simulator",
     "SiteMap",
