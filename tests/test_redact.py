@@ -1,4 +1,5 @@
 import base64
+import importlib.util
 import json
 from pathlib import Path
 import zlib
@@ -174,3 +175,20 @@ def test_truncated_gga_is_scrubbed() -> None:
     out = r.redact_value({"base": {"gngga": "$GNGGA,132203.00,4212.34\\n"}})
     assert out["base"]["gngga"] == "$GNGGA,132203.00,TRUNCATED"
     assert "4212" not in json.dumps(out)
+
+
+def test_leak_check_ignores_the_gga_time_field() -> None:
+    """A GGA clock can contain a latitude's DDMM.m digits by chance; that is not a leak."""
+    spec = importlib.util.spec_from_file_location(
+        "leak_check", Path(__file__).resolve().parents[1] / "scripts" / "leak_check.py"
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    leak_check = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(leak_check)
+
+    needles = {"3950.0"}  # the DDMM.m prefix of some real latitude
+    clock_only = "$GNGGA,233950.00,6704.1234,S,09131.5678,W,7,28,0.5,88.1,M,-2.0,M,,*60"
+    assert leak_check.leaf_hits(clock_only, needles) == 0
+    real = "$GNGGA,120000.00,3950.0123,N,09131.5678,W,4,28,0.5,88.1,M,-2.0,M,,*60"
+    assert leak_check.leaf_hits(real, needles) == 1

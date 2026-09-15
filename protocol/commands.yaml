@@ -142,7 +142,11 @@ commands:
     controller: true
     risk: safe
     status: candidate
-    source: bridge headers
+    notes: >-
+      Observed from the app nine times on 2026-09-15. It cleared fault 902 while the plan was
+      still loaded, but not after the robot had slept on the fault: then the robot answered
+      plan_msg "Goal canceled" and stayed at planning_paused 7.
+    source: bridge headers; observed from the app
 
   stop:
     payload: {}
@@ -157,9 +161,14 @@ commands:
     ack: recharge_feedback
     controller: true
     risk: safe
-    status: candidate
-    notes: cmd is 2 in the app and vendor SDK, 1 in the bridge header example. Phase 0 question.
-    source: vendor SDK modules.py, steves2j cache
+    status: verified
+    firmware: 3.14.11
+    evidence: fixtures/3.14.11/return-to-dock-from-fault.jsonl
+    notes: >-
+      cmd 2 works. Sent on 2026-09-15 while fault 902 was latched: within a second the fault
+      cleared and on_going_recharging went to 1, so it also clears a latched fault, which
+      resume alone did not. cmd 1 is still untested.
+    source: vendor SDK modules.py, steves2j cache; verified on the robot
 
   cmd_buzzer:
     payload: {state: 1, timeStamp: ms}
@@ -434,12 +443,15 @@ commands:
     status: candidate
     source: python-yarbo
   emergency_unlock:
-    payload: {}
+    payload: {confirm: 1}
     ack: none
     controller: true
     risk: confirm
     status: candidate
-    source: python-yarbo
+    notes: >-
+      The app sent confirm 1 after an emergency stop on 2026-09-15, with push_rod_cmd state 0
+      just before it.
+    source: python-yarbo; payload observed from the app
   shutdown:
     payload: {}
     ack: data_feedback

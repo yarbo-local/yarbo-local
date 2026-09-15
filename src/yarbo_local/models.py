@@ -319,7 +319,7 @@ class RobotState:
 
     @property
     def battery_current(self) -> float | None:
-        """Amps. Negative while discharging (-0.3 A at rest); charging sign not yet captured."""
+        """Amps. Negative while discharging (-0.3 A at rest), positive while charging (+14.3 A)."""
         raw = _int_or_none(self.get("BatteryMSG.current"))
         return raw / 1000.0 if raw is not None else None
 

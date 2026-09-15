@@ -74,6 +74,17 @@ def needles_from(captures: Path) -> tuple[set[str], set[str]]:
 
 METRE_KEYS = frozenset({"x", "y", "phi"})
 
+_GGA_SENTENCE = re.compile(r"(\$G[NP]GGA,)([^,]*)(,)")
+
+
+def _blank_gga_time(text: str) -> str:
+    """Drop the UTC time from GGA sentences before comparing.
+
+    The time reads hhmmss.ss, so its digits can contain a latitude's DDMM.m prefix
+    by coincidence (it did on 2026-09-15) while saying nothing about where the site is.
+    """
+    return _GGA_SENTENCE.sub(r"\1\3", text)
+
 
 def leaf_hits(value: Any, needles: set[str], key: str = "") -> int:
     """Count needles in every leaf, decoding blobs.
@@ -89,7 +100,8 @@ def leaf_hits(value: Any, needles: set[str], key: str = "") -> int:
     if isinstance(value, str):
         blob = codec.decode_blob(value)
         inner = leaf_hits(blob[0], needles) if blob is not None else 0
-        return inner + sum(value.count(n) for n in needles)
+        text = _blank_gga_time(value)
+        return inner + sum(text.count(n) for n in needles)
     if isinstance(value, int | float) and not isinstance(value, bool) and key in METRE_KEYS:
         return 0
     text = json.dumps(value)
