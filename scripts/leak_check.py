@@ -72,18 +72,45 @@ def needles_from(captures: Path) -> tuple[set[str], set[str]]:
     return coords, {s for s in serials if not s.startswith("SN-")}
 
 
+METRE_KEYS = frozenset({"x", "y", "phi"})
+
+
+def leaf_hits(value: Any, needles: set[str], key: str = "") -> int:
+    """Count needles in every leaf, decoding blobs.
+
+    Numbers under x, y or phi are map-frame metres or radians; their digits can
+    coincide with a latitude to three decimals without saying anything about where
+    the site is, so they are not compared with decimal-degree needles.
+    """
+    if isinstance(value, dict):
+        return sum(leaf_hits(v, needles, str(k)) for k, v in value.items())
+    if isinstance(value, list):
+        return sum(leaf_hits(v, needles, key) for v in value)
+    if isinstance(value, str):
+        blob = codec.decode_blob(value)
+        inner = leaf_hits(blob[0], needles) if blob is not None else 0
+        return inner + sum(value.count(n) for n in needles)
+    if isinstance(value, int | float) and not isinstance(value, bool) and key in METRE_KEYS:
+        return 0
+    text = json.dumps(value)
+    return sum(text.count(n) for n in needles)
+
+
 def count_hits(path: Path, needles: set[str]) -> int:
     if path.suffix == ".jsonl":
         hits = 0
         for line in path.open(encoding="utf-8"):
-            if not line.strip():
-                continue
-            rec = json.loads(line)
-            hits += sum(line.count(n) for n in needles)
-            for text in list(texts(rec.get("payload")))[1:]:
-                hits += sum(text.count(n) for n in needles)
+            if line.strip():
+                rec = json.loads(line)
+                hits += leaf_hits(rec, needles)
         return hits
-    return sum(path.read_text(encoding="utf-8", errors="ignore").count(n) for n in needles)
+    text = path.read_text(encoding="utf-8", errors="ignore")
+    if path.suffix == ".json":
+        try:
+            return leaf_hits(json.loads(text), needles)
+        except json.JSONDecodeError:
+            pass
+    return sum(text.count(n) for n in needles)
 
 
 def main() -> int:

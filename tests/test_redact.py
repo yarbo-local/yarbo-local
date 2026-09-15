@@ -167,3 +167,10 @@ def test_latitude_shift_keeps_differences_near_the_wrap() -> None:
     a, b = r.shift_lat(28.00), r.shift_lat(28.01)  # 87.9 and 87.91 would have clamped to 89
     assert round(b - a, 6) == 0.01
     assert -80.0 <= a <= 80.0
+
+
+def test_truncated_gga_is_scrubbed() -> None:
+    r = Redactor(salt="t", lat_offset=1.0, lon_offset=2.0)
+    out = r.redact_value({"base": {"gngga": "$GNGGA,132203.00,4212.34\\n"}})
+    assert out["base"]["gngga"] == "$GNGGA,132203.00,TRUNCATED"
+    assert "4212" not in json.dumps(out)

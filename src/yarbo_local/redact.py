@@ -128,8 +128,12 @@ class Redactor:
         star = sentence.rfind("*")
         body = sentence[1:star] if star > 0 else sentence[1:]
         fields = body.split(",")
-        if len(fields) < 6 or not fields[0].endswith("GGA"):
+        if not fields[0].endswith("GGA"):
             return sentence
+        if len(fields) < 6:
+            # The base station sometimes sends a sentence cut off after the latitude.
+            # Anything past the time field is position, so drop it.
+            return f"${fields[0]},{fields[1] if len(fields) > 1 else ''},TRUNCATED"
         lat = _dm_to_decimal(fields[2], 2) if fields[2] else None
         lon = _dm_to_decimal(fields[4], 3) if fields[4] else None
         if lat is not None:

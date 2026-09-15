@@ -110,6 +110,20 @@ The robot stored an area "Area 1" (id 1, 25 vertices, 126.4 m2, stored `area` fi
 
 **Redaction consequence.** The redactor shifts latitude and longitude by whole-degree offsets. Differences in latitude survive in metres, but metres per degree of longitude depend on the true latitude, so east-west distances computed from a redacted fixture are wrong by that factor. Tests on redacted fixtures check signs and the north axis only.
 
+## 15. First plans with the Lawn Mower Pro
+
+On 2026-09-14 and 15 the robot ran "east lawn plan" (area 4, 512 m2) and "west lawn plan" (area 9, 950 m2) with a Lawn Mower Pro head (`HeadMsg.head_type` 5, head firmware 2.2.4). Captures stay local; a centimetre-rounded plan and obstacle sample is in the integration's test fixtures.
+
+**Blades.** `mower_head_info03` (left) and `mower_head_info04` (right) report `*_blade_motor_rpm` of about -2800 and +2800 (the left disc turns the other way), `*_blade_motor_speed` 80 (percent), `*_blade_motor_current` 70 to 131 varying with load, and `*_blade_motor_temp` 73 to 76 slowly rising. The user confirmed the head was cutting at the time. `mower_head_info02` (middle) reads zero in every field, commanded speed included; on this head it appears unused. `mower_head_info01.lift_motor_place` read 0 throughout; its scale is unknown.
+
+**plan_feedback** arrives at 2 Hz while a plan runs: `{planId, areaIds, cleanAreaId, finishIds, actualCleanArea, finishCleanArea, totalCleanArea, duration, leftTime, totalTime, startTime, battery_consumption, runningState, state, cleanPathProgress}`. `cleanPathProgress` holds one entry per path of the area, `{id, type, clean_index, clean_times, path: [{x, y}], path_slope}`; the west lawn had a 129-point path of type 0 and an 82-point path of type 1, and `clean_index` advanced from 37 to 39 over 150 s on the first. `get_plan_feedback` answers state 0 with the same keys while a plan runs.
+
+**cloud_points_feedback** also arrives at 2 Hz: `{rotate_rad, tmp_barrier_points}`, where `tmp_barrier_points` is a list of clusters, each a list of `{x, y}` in the map frame. The list empties within seconds, and it stayed empty for a whole 150 s window mid-plan, so a consumer has to accumulate clusters for the run. The integration merges clusters closer than 0.35 m and clears them when a new run starts.
+
+**Error 901.** During the East Lawn run `StateMSG.error_code` went to 901 at 17:45 with the battery at 41 %, stayed there until 19:03, briefly returned to 0 while the robot started returning, went back to 901, and cleared at 19:59; the robot then returned to the dock. The meaning of 901 is unknown. Home Assistant's history holds the timeline; no capture was running.
+
+**Charging, positive direction.** After that return, the library's charging rule (`BatteryMSG.status` above 1 or `StateMSG.charging_status` set) turned on at 20:03 while the battery rose from 36 % to 59 % in 33 minutes. That is the first observation of the rule firing correctly; which of the two fields fired was not captured.
+
 ## Values settled
 
 - `set_sound_param.vol` scale: `StateMSG.volume` is a float 0 to 1, matching the vendor SDK.
