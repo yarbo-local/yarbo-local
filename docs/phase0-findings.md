@@ -128,6 +128,14 @@ On 2026-09-14 and 15 the robot ran "east lawn plan" (area 4, 512 m2) and "west l
 
 **Charging, positive direction.** After that return, the library's charging rule (`BatteryMSG.status` above 1 or `StateMSG.charging_status` set) turned on at 20:03 while the battery rose from 36 % to 59 % in 33 minutes. That is the first observation of the rule firing correctly; which of the two fields fired was not captured.
 
+## 16. Faults
+
+`StateMSG.error_code` is the only fault signal, and it is a bare number. The Yarbo app supplies the wording from its own table; no public source has that table. So a code gets text in `models.FAULTS` only after the app's message has been seen for it on a real robot, and `codes.yaml` records when. Anything else is shown as "Fault N", with a pointer to the app, never as a bare "error".
+
+**902, tilted or flipped over.** 2026-09-15, Mower Pro on the West Lawn plan. In the same frame, `error_code` went 0 to 902, `on_going_planning` went 1 to 0, `planning_paused` went 0 to 7, and `car_controller` went false. One second later, `plan_msg` read "Goal canceled". The Mower Pro head's `RunningStatusMSG.head_gyro_pitch` rose from about 2° to 12° over the four seconds before. The app showed "Tilted or flipped over". Nothing arrived on `data_feedback` or any other topic. The code stayed at 902 until the plan was resumed from the app 238 s later (`app/resume {}`), when all three fields returned to running values in one frame. This confirms `planning_paused` 7 as the fault pause reason. Fixture: `mower-pro-fault-902-tilted.jsonl`.
+
+**901, unidentified.** Seen 2026-09-14 from 17:45 to 19:59 during the East Lawn plan, which ended at 79%. The app's text for it was not recorded.
+
 ## Values settled
 
 - `set_sound_param.vol` scale: `StateMSG.volume` is a float 0 to 1, matching the vendor SDK.
@@ -136,12 +144,4 @@ On 2026-09-14 and 15 the robot ran "east lawn plan" (area 4, 512 m2) and "west l
 
 ## Still open
 
-`cmd_recharge` cmd value, `plan_feedback` wire casing, `BatteryMSG.status` values while driving, what the robot publishes on controller theft, whether both brokers accept simultaneous sessions, and TLS on 8883.
-
-## 16. Faults
-
-`StateMSG.error_code` is the only fault signal, and it is a bare number. The Yarbo app supplies the wording from its own table; no public source has that table. So a code gets text in `models.FAULTS` only after the app's message has been seen for it on a real robot, and `codes.yaml` records when. Anything else is shown as "Fault N", with a pointer to the app, never as a bare "error".
-
-**902, tilted or flipped over.** 2026-09-15, Mower Pro on the West Lawn plan. In the same frame, `error_code` went 0 to 902, `on_going_planning` went 1 to 0, `planning_paused` went 0 to 7, and `car_controller` went false. One second later, `plan_msg` read "Goal canceled". The Mower Pro head's `RunningStatusMSG.head_gyro_pitch` rose from about 2° to 12° over the four seconds before. The app showed "Tilted or flipped over". Nothing arrived on `data_feedback` or any other topic. The code stayed at 902 until the plan was resumed from the app 238 s later (`app/resume {}`), when all three fields returned to running values in one frame. This confirms `planning_paused` 7 as the fault pause reason. Fixture: `mower-pro-fault-902-tilted.jsonl`.
-
-**901, unidentified.** Seen 2026-09-14 from 17:45 to 19:59 during the East Lawn plan, which ended at 79%. The app's text for it was not recorded.
+`cmd_recharge` cmd value, `plan_feedback` wire casing, `BatteryMSG.status` values while driving, what the robot publishes on controller theft, whether both brokers accept simultaneous sessions, TLS on 8883, and the app's text for every fault code other than 902.
