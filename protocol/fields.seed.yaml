@@ -132,8 +132,9 @@ fields:
   StateMSG.error_code:
     entity: sensor
     enabled: true
-    notes: 0 is no error. Non-zero codes are not yet mapped.
-    source: vendor SDK
+    codes: StateMSG.error_code
+    notes: 0 is no fault. The robot sends only the number; codes.yaml lists the ones whose app text has been seen (902 tilted or flipped over).
+    source: vendor SDK; 902 observed 2026-09-15
   StateMSG.charging_status:
     entity: binary_sensor
     device_class: battery_charging

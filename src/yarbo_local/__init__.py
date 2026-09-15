@@ -20,6 +20,7 @@ from .exceptions import (
 from .models import (
     Activity,
     ChargingPoint,
+    Fault,
     Feedback,
     GgaFix,
     GpsReference,
@@ -47,6 +48,7 @@ __all__ = [
     "ConnectionLostError",
     "ControllerError",
     "FakeTransport",
+    "Fault",
     "Feedback",
     "GgaFix",
     "GpsReference",

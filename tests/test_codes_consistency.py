@@ -40,3 +40,11 @@ def test_recharging_in_transit_matches_rule() -> None:
     table = CODES["StateMSG.on_going_recharging"]
     expected = {k for k in _ints(table) if k > 0 and k != 4}
     assert expected == models.RECHARGING_IN_TRANSIT
+
+
+def test_fault_and_pause_tables_match() -> None:
+    faults = _ints(CODES["StateMSG.error_code"])
+    assert faults.pop(0) == "none"
+    assert faults == {code: key for code, (key, _, _) in models.FAULTS.items()}
+    assert not set(CODES["StateMSG.error_code"]["observed_unidentified"]) & set(models.FAULTS)
+    assert _ints(CODES["StateMSG.planning_paused"]) == {0: "not_paused", **models.PAUSE_REASONS}

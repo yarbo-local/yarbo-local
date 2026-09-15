@@ -34,6 +34,30 @@ HEAD_TYPES = {
 }
 MOWER_HEADS = frozenset({3, 5})
 
+# StateMSG.error_code. The robot sends only the number; the Yarbo app owns the wording.
+# A code gets text here only after the app's message was seen for it on a real robot
+# (codes.yaml records when). Anything else is reported by number, never as "error".
+FAULTS: dict[int, tuple[str, str, str]] = {
+    902: (
+        "tilted",
+        "Tilted or flipped over",
+        "Check the robot is level and free, then resume the plan in the Yarbo app.",
+    ),
+}
+UNIDENTIFIED_FAULT_HINT = "This code is not identified yet. The Yarbo app shows what it means."
+
+# StateMSG.planning_paused. 7 was seen on the wire together with fault 902; the rest
+# come from the vendor SDK and are unconfirmed.
+PAUSE_REASONS = {
+    1: "manual",
+    2: "low_battery_recharging",
+    3: "power_restart",
+    4: "emergency_stop",
+    5: "bumper",
+    6: "stuck",
+    7: "fault",
+}
+
 
 class Activity(StrEnum):
     SLEEPING = "sleeping"
@@ -47,6 +71,33 @@ class Activity(StrEnum):
     RETURNING = "returning"
     CHARGING = "charging"
     ERROR = "error"
+
+
+# --- faults
+
+
+@dataclass(frozen=True, slots=True)
+class Fault:
+    """A non-zero ``StateMSG.error_code``, with the app's wording when it is known."""
+
+    code: int
+    key: str | None
+    description: str
+    hint: str
+
+    @classmethod
+    def from_code(cls, code: int) -> Fault | None:
+        if code == 0:
+            return None
+        known = FAULTS.get(code)
+        if known is None:
+            return cls(code, None, f"Fault {code}", UNIDENTIFIED_FAULT_HINT)
+        key, description, hint = known
+        return cls(code, key, description, hint)
+
+    @property
+    def identified(self) -> bool:
+        return self.key is not None
 
 
 # --- NMEA
@@ -292,6 +343,18 @@ class RobotState:
     @property
     def error_code(self) -> int:
         return _int_or_none(self.get("StateMSG.error_code")) or 0
+
+    @property
+    def fault(self) -> Fault | None:
+        return Fault.from_code(self.error_code)
+
+    @property
+    def pause_reason(self) -> str | None:
+        """Why the plan stopped: a :data:`PAUSE_REASONS` value, ``unknown``, or None."""
+        code = self.paused_code
+        if code == 0:
+            return None
+        return PAUSE_REASONS.get(code, "unknown")
 
     @property
     def planning_code(self) -> int:

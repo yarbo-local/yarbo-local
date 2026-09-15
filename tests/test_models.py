@@ -4,6 +4,7 @@ from pathlib import Path
 from yarbo_local.models import (
     METERS_PER_DEGREE,
     Activity,
+    Fault,
     Feedback,
     Heartbeat,
     RobotState,
@@ -239,3 +240,36 @@ def test_area_params_rejects_defaults_for_unknown_id() -> None:
     assert parse_area_params({"id": 1, "gap": 0.3}, 1) == {"id": 1, "gap": 0.3}
     assert parse_area_params({"id": 0, "gap": 0.3}, 99) is None
     assert parse_area_params("nope", 1) is None
+
+
+def test_fault_902_from_the_real_tilt() -> None:
+    """The robot sent 902 when the app said "Tilted or flipped over"; say that, not "error"."""
+    state = RobotState()
+    seen: list[tuple[int, str | None, str | None]] = []
+    for line in (FIXTURES / "mower-pro-fault-902-tilted.jsonl").read_text().splitlines():
+        rec = json.loads(line)
+        if not rec["topic"].endswith("/device/DeviceMSG"):
+            continue
+        state, _ = state.with_frame(rec["payload"], rec["t"])
+        fault = state.fault
+        seen.append((state.error_code, fault.description if fault else None, state.pause_reason))
+    assert seen[0] == (0, None, None)
+    assert (902, "Tilted or flipped over", "fault") in seen
+    assert seen[-1] == (0, None, None)
+
+
+def test_fault_wording() -> None:
+    assert Fault.from_code(0) is None
+    tilted = Fault.from_code(902)
+    assert tilted is not None
+    assert tilted.identified
+    assert tilted.key == "tilted"
+    unknown = Fault.from_code(901)
+    assert unknown is not None
+    assert not unknown.identified
+    assert unknown.description == "Fault 901"
+    assert "Yarbo app" in unknown.hint
+    base, _ = RobotState().with_frame({"StateMSG": {"planning_paused": 6}}, 1.0)
+    assert base.pause_reason == "stuck"
+    odd, _ = base.with_frame({"StateMSG": {"planning_paused": 42}}, 2.0)
+    assert odd.pause_reason == "unknown"

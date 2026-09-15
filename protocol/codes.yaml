@@ -23,7 +23,20 @@ StateMSG.planning_paused:
   4: emergency_stop
   5: bumper
   6: stuck
-  7: error
+  7: fault              # seen on the wire with StateMSG.error_code 902 (2026-09-15)
+
+StateMSG.error_code:
+  # The robot sends only the number; the Yarbo app owns the wording. A code is listed
+  # with a key only after the app's text for it was seen on a real robot. The text
+  # lives in models.FAULTS.
+  0: none
+  902: tilted           # app: "Tilted or flipped over". 2026-09-15, fw 3.14.11, Mower Pro,
+                        # West Lawn plan. on_going_planning 1->0, planning_paused 0->7,
+                        # plan_msg "Goal canceled", head gyro pitch about 2 -> 12 deg.
+                        # Cleared when the plan was resumed from the app 4 min later.
+                        # Fixture: mower-pro-fault-902-tilted.jsonl
+  observed_unidentified:
+    901: "2026-09-14 East Lawn plan, 17:45-19:59; the run ended at 79%"
 
 StateMSG.on_going_recharging:
   0: not_started
