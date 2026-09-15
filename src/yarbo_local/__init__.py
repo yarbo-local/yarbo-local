@@ -28,7 +28,7 @@ from .models import (
     SiteMap,
     Zone,
 )
-from .obstacles import Barrier, Detection, ObstacleTracker, Run
+from .obstacles import Barrier, ObstacleTracker, Run
 from .registry import Command, Registry
 from .resolve import resolve
 from .session import Session
@@ -46,7 +46,6 @@ __all__ = [
     "CommandRefusedError",
     "ConnectionLostError",
     "ControllerError",
-    "Detection",
     "FakeTransport",
     "Feedback",
     "GgaFix",
