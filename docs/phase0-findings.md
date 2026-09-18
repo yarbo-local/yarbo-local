@@ -140,6 +140,10 @@ On 2026-09-14 and 15 the robot ran "east lawn plan" (area 4, 512 m2) and "west l
 
 **901, unidentified.** Seen 2026-09-14 from 17:45 to 19:59 during the East Lawn plan, which ended at 79%. The app's text for it was not recorded.
 
+## 17. One robot, two addresses, two sessions
+
+Settled on 2026-09-18 with `yarbo-local sitecheck`: a session to the rover and a session to the base station relay, open at the same time for the same serial, both stayed connected, and both answered `get_device_msg` (72 and 83 ms), `read_all_plan` and `get_map` with the robot asleep. Neither saw traffic for any other serial. So both brokers accept simultaneous sessions and both relay requests, not only telemetry. Whether a relay ever carries a second rover is still unknown; `docs/multi-robot.md` is the request for that.
+
 ## Values settled
 
 - `set_sound_param.vol` scale: `StateMSG.volume` is a float 0 to 1, matching the vendor SDK.
@@ -148,4 +152,4 @@ On 2026-09-14 and 15 the robot ran "east lawn plan" (area 4, 512 m2) and "west l
 
 ## Still open
 
-`cmd_recharge` cmd value, `plan_feedback` wire casing, `BatteryMSG.status` values while driving, what the robot publishes on controller theft, whether both brokers accept simultaneous sessions, TLS on 8883, and the app's text for every fault code other than 902.
+`cmd_recharge` cmd value, `plan_feedback` wire casing, `BatteryMSG.status` values while driving, what the robot publishes on controller theft, whether a base station ever relays more than one rover, TLS on 8883, and the app's text for every fault code other than 902.

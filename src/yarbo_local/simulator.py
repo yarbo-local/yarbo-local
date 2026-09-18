@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import copy
 from dataclasses import dataclass, field
 import json
 from pathlib import Path
@@ -106,6 +107,19 @@ class Simulator:
             }
         return sim
 
+    def sibling(self, serial: str, *, firmware: str | None = None) -> Simulator:
+        """A second robot with its own serial and state, for multi-robot tests."""
+        other = Simulator(
+            serial=serial,
+            snapshot=copy.deepcopy(self.snapshot),
+            firmware=firmware or self.firmware,
+            plans=copy.deepcopy(self.plans),
+            site_map=copy.deepcopy(self.site_map),
+            now=self.now,
+        )
+        other.snapshot["version"] = other.firmware
+        return other
+
     # -- wiring
 
     def attach(self, transport: FakeTransport) -> None:
@@ -114,6 +128,10 @@ class Simulator:
         transport.on_publish = self.handle
         # A real robot heartbeats within 5 s of a subscription; answer immediately.
         transport.on_subscribe = lambda _filter: self.tick()
+
+    def attach_port(self, port: FakeTransport) -> None:
+        """Publish through ``port`` without taking its hooks: a :class:`FakeBroker` owns those."""
+        self._transport = port
 
     # -- outbound helpers
 
@@ -153,6 +171,10 @@ class Simulator:
         # Firmware >= 3.9 silently drops plaintext commands; model that.
         if self._compress() and enc != "zlib":
             self.log.append((parsed.leaf, "DROPPED: not zlib"))
+            return
+        # Firmware before 3.9 cannot read zlib and drops it just as silently.
+        if not self._compress() and enc == "zlib":
+            self.log.append((parsed.leaf, "DROPPED: zlib"))
             return
         self.log.append((parsed.leaf, value))
         # The real broker echoes app publishes back to subscribers.

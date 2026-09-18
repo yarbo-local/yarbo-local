@@ -92,6 +92,10 @@ class Session:
         self._pending: dict[str, list[asyncio.Future[Feedback]]] = {}
         self._own_publishes: list[tuple[float, str, bytes]] = []
         self._seen_encodings: dict[str, codec.Encoding] = {}
+        self.other_serials: set[str] = set()
+        self.foreign_messages: dict[str, int] = {}
+        self._scoped = serial is not None
+        self._guess_zlib = True
         self._controller_held = False
         self._stop = asyncio.Event()
         self._ready = asyncio.Event()
@@ -185,6 +189,7 @@ class Session:
             self.serial = parsed.serial
             self.state = RobotState(serial=parsed.serial)
         elif parsed.serial != self.serial:
+            self._note_foreign(parsed.serial)
             return
         value, enc = codec.decode(message.payload)
         echo = parsed.side == "app" and self._is_own_echo(message)
@@ -209,6 +214,32 @@ class Session:
         self._seen_encodings[parsed.leaf] = enc
         await self._handle_device(parsed.leaf, value)
         await self._emit(self._topic_listeners, parsed.leaf, value)
+
+    def _note_foreign(self, serial: str) -> None:
+        """Count traffic for another robot, and say so the first time it is seen.
+
+        A session given a serial subscribes to that serial alone, so this should never
+        fire for it; if it does, the broker is not honouring the filter. A session given
+        no serial listens to every robot until the first one speaks, and keeps the rest.
+        """
+        self.foreign_messages[serial] = self.foreign_messages.get(serial, 0) + 1
+        if serial in self.other_serials:
+            return
+        self.other_serials.add(serial)
+        if self._scoped:
+            _LOGGER.warning(
+                "received traffic for robot %s on a subscription for %s alone; ignoring it. "
+                "The broker is not honouring the topic filter",
+                serial,
+                self.serial,
+            )
+        else:
+            _LOGGER.warning(
+                "this broker also carries robot %s; this session follows %s because it spoke "
+                "first. Pass a serial to choose",
+                serial,
+                self.serial,
+            )
 
     async def _handle_device(self, leaf: str, value: Any) -> None:
         if not isinstance(value, dict):
@@ -251,7 +282,8 @@ class Session:
 
     # -- outbound
 
-    def _compress(self) -> bool:
+    def _known_encoding(self) -> bool | None:
+        """zlib or not, when something says so: the caller, the firmware, or what was heard."""
         if self._encoding == "zlib":
             return True
         if self._encoding == "json":
@@ -259,7 +291,16 @@ class Session:
         decided = codec.firmware_wants_zlib(self.state.firmware)
         if decided is None:
             decided = codec.observed_encoding(self._seen_encodings)
-        return True if decided is None else decided
+        return decided
+
+    @property
+    def sends_zlib(self) -> bool:
+        """The encoding the next command would use."""
+        return self._compress()
+
+    def _compress(self) -> bool:
+        known = self._known_encoding()
+        return self._guess_zlib if known is None else known
 
     async def _publish(self, name: str, payload: Any) -> None:
         if self.serial is None:
@@ -299,18 +340,51 @@ class Session:
         timeout: float = 8.0,
         confirmed: bool = False,
     ) -> Feedback:
-        """Publish and wait for the correlated ``data_feedback`` reply."""
+        """Publish and wait for the correlated ``data_feedback`` reply.
+
+        A sleeping robot sends only a plain heartbeat, which says nothing about its
+        firmware, so the first request may have to guess the encoding. The wrong guess
+        is dropped without a reply on either firmware family. When the guess times out,
+        the request is sent once more the other way, and the answer settles it.
+        """
         cmd = self._check(name, confirmed)
         if not cmd.expects_reply:
             raise CommandRefusedError(f"{name!r} does not reply on data_feedback; use send()")
         await self._prepare(cmd)
+        body = cmd.payload if payload is None else payload
+        guessed = self._known_encoding() is None
+        try:
+            fb = await self._request_once(name, body, timeout)
+        except ReplyTimeoutError:
+            if not guessed or self._known_encoding() is not None:
+                raise
+            self._guess_zlib = not self._guess_zlib
+            _LOGGER.info(
+                "%s: no reply to a %s request and the firmware is unknown; trying %s",
+                name,
+                "plain" if self._guess_zlib else "zlib",
+                "zlib" if self._guess_zlib else "plain",
+            )
+            try:
+                fb = await self._request_once(name, body, timeout)
+            except ReplyTimeoutError:
+                self._guess_zlib = not self._guess_zlib
+                raise
+        if not fb.ok:
+            raise CommandError(name, fb.state, fb.msg)
+        if name == "get_device_msg" and isinstance(fb.payload, dict):
+            # The snapshot is authoritative; fold it into the state for every caller.
+            await self.merge_snapshot(fb.payload)
+        return fb
+
+    async def _request_once(self, name: str, body: Any, timeout: float) -> Feedback:
         loop = asyncio.get_running_loop()
         fut: asyncio.Future[Feedback] = loop.create_future()
         self._pending.setdefault(name, []).append(fut)
         try:
-            await self._publish(name, cmd.payload if payload is None else payload)
+            await self._publish(name, body)
             async with asyncio.timeout(timeout):
-                fb = await fut
+                return await fut
         except TimeoutError as err:
             raise ReplyTimeoutError(f"{name}: no reply within {timeout}s") from err
         finally:
@@ -319,12 +393,6 @@ class Session:
                 waiters.remove(fut)
                 if not waiters:
                     self._pending.pop(name, None)
-        if not fb.ok:
-            raise CommandError(name, fb.state, fb.msg)
-        if name == "get_device_msg" and isinstance(fb.payload, dict):
-            # The snapshot is authoritative; fold it into the state for every caller.
-            await self.merge_snapshot(fb.payload)
-        return fb
 
     # -- robot-level helpers
 

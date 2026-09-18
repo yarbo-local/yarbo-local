@@ -68,3 +68,17 @@ def all_for(serial: str | None = None) -> str:
 def heartbeats() -> str:
     """Every robot's heartbeat: sent awake or asleep, and enough to learn a serial."""
     return f"{PREFIX}/+/device/heart_beat"
+
+
+def matches(topic_filter: str, topic: str) -> bool:
+    """MQTT filter matching: ``+`` is one level, a trailing ``#`` is the rest."""
+    want = topic_filter.split("/")
+    have = topic.split("/")
+    for i, part in enumerate(want):
+        if part == "#":
+            return i == len(want) - 1
+        if i >= len(have):
+            return False
+        if part not in ("+", have[i]):
+            return False
+    return len(want) == len(have)

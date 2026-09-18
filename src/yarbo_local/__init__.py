@@ -34,7 +34,7 @@ from .registry import Command, Registry
 from .resolve import resolve
 from .session import Session
 from .simulator import Simulator
-from .transport import FakeTransport, MqttTransport
+from .transport import FakeBroker, FakeTransport, MqttTransport
 
 __version__ = "0.1.0.dev0"
 
@@ -47,6 +47,7 @@ __all__ = [
     "CommandRefusedError",
     "ConnectionLostError",
     "ControllerError",
+    "FakeBroker",
     "FakeTransport",
     "Fault",
     "Feedback",

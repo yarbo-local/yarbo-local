@@ -1,4 +1,4 @@
-"""Command line entry point: ``yarbo-local sniff|probe|discover|dump|status|sim|studio``."""
+"""Command line: ``yarbo-local sniff|probe|discover|dump|status|sim|studio|sitecheck``."""
 
 from __future__ import annotations
 
@@ -8,7 +8,17 @@ import json
 from pathlib import Path
 import sys
 
-from . import __version__, capture, discover, dump, probe, redact, simulator, status
+from . import (
+    __version__,
+    capture,
+    discover,
+    dump,
+    probe,
+    redact,
+    simulator,
+    sitecheck,
+    status,
+)
 from .exceptions import YarboError
 
 
@@ -104,6 +114,15 @@ def _build_parser() -> argparse.ArgumentParser:
         metavar="CIDR",
         help="if the host does not answer, scan this subnet for a broker with this serial",
     )
+
+    p = sub.add_parser(
+        "sitecheck",
+        help="check a site with one or several robots and write a report that is safe to share",
+    )
+    p.add_argument("hosts", help="a subnet such as 192.168.50.0/24, an IP, or a comma list")
+    p.add_argument("--port", type=int, default=1883)
+    p.add_argument("--window", type=float, default=12.0, help="seconds to listen to each broker")
+    p.add_argument("--out", type=Path, default=Path(), help="directory for the report and log")
 
     p = sub.add_parser("dump", help="summarise a JSONL capture")
     p.add_argument("file", type=Path)
@@ -220,6 +239,17 @@ def main(argv: list[str] | None = None) -> int:
                     open_browser=not args.no_open,
                 )
             )
+        elif args.cmd == "sitecheck":
+            survey, findings = sitecheck.run(
+                args.hosts, port=args.port, window=args.window, out_dir=args.out
+            )
+            for finding in findings:
+                print(survey.labels.scrub(finding.render()), end="\n\n")
+            print(
+                f"report: {args.out / 'sitecheck-report.md'}\nlog:    {args.out / 'sitecheck.log'}"
+            )
+            print("Both files use labels in place of serials and addresses, and hold no position.")
+            return 0 if all(f.ok for f in findings) else 1
         elif args.cmd == "dump":
             print(dump.summarise(args.file).render(keys=args.keys, app=args.app))
     except KeyboardInterrupt:

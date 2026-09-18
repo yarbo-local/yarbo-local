@@ -22,6 +22,7 @@ Status: **pre-alpha.** Phase 0 validated the protocol on real hardware (firmware
 | `src/yarbo_local/probe.py` | `probe`: send one allowlisted command, show the correlated reply and the telemetry deltas. |
 | `src/yarbo_local/discover.py` | `discover`: find brokers carrying `snowbot` traffic, identified by the serial in their topics. |
 | `src/yarbo_local/dump.py` | `dump`: summarise a capture, including the full `DeviceMSG` key inventory. |
+| `src/yarbo_local/sitecheck.py` | `sitecheck`: check a site with one or several robots, reads only, and write a report that is safe to share (`docs/multi-robot.md`). |
 | `src/yarbo_local/redact.py` | Serial, MAC, IP, coordinate and Wi-Fi redaction for shareable fixtures. |
 | `protocol/` | The knowledge base: `commands.yaml`, `fields.yaml`, `codes.yaml`, `fixtures/`. |
 | `docs/phase0.md` | The twelve questions Phase 0 answers, with the exact commands. |
@@ -92,6 +93,10 @@ Every host carrying Yarbo traffic is listed with the serial it carries and its D
 ## Safety and privacy
 
 The robot's broker has no authentication. Anyone on its network segment can drive it. Put the robot on its own VLAN, allow only the machine running this tooling (and later Home Assistant) to reach port 1883, and think deliberately about whether the robot should have internet access at all. Captures contain your serial number, coordinates and network details; use `--redact` and review the file before sharing it.
+
+## Have more than one robot?
+
+Nobody on the project does. One command tells us what we cannot find out ourselves, without sharing a serial, an address or a position: see [docs/multi-robot.md](docs/multi-robot.md).
 
 ## Contributing protocol knowledge
 

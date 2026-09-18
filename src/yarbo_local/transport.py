@@ -20,6 +20,7 @@ from typing import Protocol
 
 import aiomqtt
 
+from . import topics
 from .exceptions import ConnectionLostError
 
 
@@ -196,3 +197,68 @@ class FakeTransport:
     def drop(self) -> None:
         """Simulate the broker going away."""
         self.inbox.put_nowait(ConnectionLostError("simulated disconnect"))
+
+
+class _BrokerPort(FakeTransport):
+    """What a simulated robot holds: delivering on it publishes through the broker."""
+
+    def __init__(self, broker: FakeBroker) -> None:
+        super().__init__()
+        self._broker = broker
+        self._connected = True
+
+    def deliver(self, topic: str, payload: bytes, *, retain: bool = False) -> None:
+        self._broker.route(topic, payload, retain=retain)
+
+
+class _Robot(Protocol):
+    serial: str
+
+    def handle(self, topic: str, payload: bytes) -> None: ...
+    def tick(self) -> None: ...
+    def attach_port(self, port: FakeTransport) -> None: ...
+
+
+class FakeBroker:
+    """One in-memory broker shared by several clients and several simulated robots.
+
+    Unlike a lone :class:`FakeTransport`, it honours subscription filters, so it can
+    answer the question a shared broker raises: does a session scoped to one serial
+    ever see another robot's traffic? ``routed`` records every message with the
+    clients it reached, for tests that need to explain a failure.
+    """
+
+    def __init__(self) -> None:
+        self.clients: list[FakeTransport] = []
+        self.robots: list[_Robot] = []
+        self.routed: list[tuple[str, int]] = []
+
+    def client(self) -> FakeTransport:
+        transport = FakeTransport()
+        transport.on_publish = self._from_client
+        transport.on_subscribe = self._subscribed
+        self.clients.append(transport)
+        return transport
+
+    def attach(self, robot: _Robot) -> None:
+        robot.attach_port(_BrokerPort(self))
+        self.robots.append(robot)
+
+    def route(self, topic: str, payload: bytes, *, retain: bool = False) -> None:
+        reached = 0
+        for client in self.clients:
+            if client.connected and any(topics.matches(f, topic) for f in client.filters):
+                client.deliver(topic, payload, retain=retain)
+                reached += 1
+        self.routed.append((topic, reached))
+
+    def _from_client(self, topic: str, payload: bytes) -> None:
+        # Each robot ignores topics that are not its own and echoes the ones that are,
+        # which is what the real broker's echo looks like from a client.
+        for robot in self.robots:
+            robot.handle(topic, payload)
+
+    def _subscribed(self, _topic_filter: str) -> None:
+        # A real robot heartbeats within 5 s of a subscription; answer immediately.
+        for robot in self.robots:
+            robot.tick()

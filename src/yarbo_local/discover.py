@@ -11,15 +11,22 @@ said nothing useful anyway.
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
+from collections.abc import Callable
+from dataclasses import dataclass, field
 import ipaddress
 import secrets
 import socket
 import time
 
-import aiomqtt
-
 from . import topics
+from .exceptions import ConnectionLostError
+from .transport import MqttTransport, Transport
+
+# The robot heartbeats every 2 s awake and every 5 s asleep. A window longer than the
+# slow interval hears every robot a broker carries, not only the first one to speak.
+HEARTBEAT_WINDOW = 6.0
+
+TransportFactory = Callable[[str, int], Transport]
 
 
 @dataclass
@@ -33,6 +40,7 @@ class BrokerHit:
     first_message_after: float | None
     hostname: str | None
     guess: str
+    heartbeats: dict[str, int] = field(default_factory=dict)
 
     def render(self) -> str:
         return (
@@ -81,41 +89,68 @@ async def tcp_open(host: str, port: int, timeout: float) -> bool:
     return True
 
 
-async def _listen(
-    host: str, port: int, wait: float, *, heartbeat_only: bool
-) -> tuple[list[str], list[str], float | None]:
-    """Learn the serials a broker carries.
+@dataclass
+class BrokerSample:
+    """What one broker carried during one listening window."""
 
-    ``heartbeat_only`` subscribes to the heartbeat alone and returns at the first
-    one: the robot sends it awake or asleep, and it is all address resolution needs.
-    Otherwise every topic is sampled, so the CLI can show what is flowing.
+    serials: list[str]
+    leaves: list[str]
+    first_message_after: float | None
+    heartbeats: dict[str, int]
+    error: str | None = None
+
+
+def _mqtt(host: str, port: int) -> Transport:
+    return MqttTransport(host, port, identifier=f"yarbo-local-discover-{secrets.token_hex(3)}")
+
+
+async def sample(
+    host: str,
+    port: int = 1883,
+    *,
+    wait: float = HEARTBEAT_WINDOW,
+    heartbeat_only: bool = True,
+    stop_on: str | None = None,
+    connect: TransportFactory | None = None,
+) -> BrokerSample:
+    """Listen to one broker and report every serial it carries.
+
+    A broker may carry more than one robot, so the whole window is heard out rather
+    than stopping at the first heartbeat. ``stop_on`` names the one serial the caller
+    is looking for and returns as soon as it is heard. ``heartbeat_only`` subscribes to
+    heartbeats alone, which every robot sends awake or asleep; otherwise every topic is
+    sampled so the CLI can show what is flowing.
     """
     serials: set[str] = set()
     leaves: set[str] = set()
+    heartbeats: dict[str, int] = {}
     started = time.monotonic()
     first: float | None = None
-    identifier = f"yarbo-local-discover-{secrets.token_hex(3)}"
-    topic = topics.heartbeats() if heartbeat_only else topics.all_for(None)
+    transport = (connect or _mqtt)(host, port)
+    error: str | None = None
     try:
-        async with aiomqtt.Client(host, port=port, identifier=identifier, timeout=wait) as client:
-            await client.subscribe(topic)
-            try:
-                async with asyncio.timeout(wait):
-                    async for message in client.messages:
-                        parsed = topics.parse(message.topic.value)
-                        if not parsed:
-                            continue
-                        if first is None:
-                            first = time.monotonic() - started
-                        serials.add(parsed.serial)
-                        leaves.add(parsed.leaf)
-                        if heartbeat_only or len(leaves) >= 4:
-                            break
-            except TimeoutError:
-                pass
-    except (aiomqtt.MqttError, OSError):
-        return [], [], None
-    return sorted(serials), sorted(leaves), first
+        await transport.connect()
+        await transport.subscribe(topics.heartbeats() if heartbeat_only else topics.all_for(None))
+        async with asyncio.timeout(wait):
+            async for message in transport.messages():
+                parsed = topics.parse(message.topic)
+                if not parsed:
+                    continue
+                if first is None:
+                    first = time.monotonic() - started
+                serials.add(parsed.serial)
+                leaves.add(parsed.leaf)
+                if parsed.side == "device" and parsed.leaf == "heart_beat":
+                    heartbeats[parsed.serial] = heartbeats.get(parsed.serial, 0) + 1
+                if stop_on is not None and parsed.serial == stop_on:
+                    break
+    except TimeoutError:
+        pass
+    except (ConnectionLostError, OSError) as err:
+        error = str(err)
+    finally:
+        await transport.close()
+    return BrokerSample(sorted(serials), sorted(leaves), first, heartbeats, error)
 
 
 def _reverse_name(host: str) -> str | None:
@@ -130,38 +165,68 @@ async def discover(
     *,
     port: int = 1883,
     connect_timeout: float = 0.6,
-    wait: float = 6.0,
+    wait: float = HEARTBEAT_WINDOW,
     concurrency: int = 32,
     heartbeat_only: bool = False,
     names: bool = True,
+    stop_on: str | None = None,
+    connect: TransportFactory | None = None,
 ) -> list[BrokerHit]:
     """Scan ``hosts`` for MQTT brokers that carry snowbot traffic.
 
-    ``names`` adds a reverse DNS lookup per hit, run off the event loop. Address
-    resolution inside Home Assistant turns it off, and uses ``heartbeat_only``.
+    Every open host is listened to for the whole window, all at once, so a site with
+    several robots costs one window rather than one per robot. ``names`` adds a reverse
+    DNS lookup per hit, run off the event loop. ``connect`` replaces the MQTT transport,
+    and with it the TCP check, for tests.
     """
     sem = asyncio.Semaphore(concurrency)
 
     async def check(host: str) -> str | None:
+        if connect is not None:
+            return host
         async with sem:
             return host if await tcp_open(host, port, connect_timeout) else None
 
-    open_hosts = [h for h in await asyncio.gather(*(check(h) for h in hosts)) if h]
-    hits: list[BrokerHit] = []
-    for host in open_hosts:
-        serials, leaves, first = await _listen(host, port, wait, heartbeat_only=heartbeat_only)
-        hostname = await asyncio.to_thread(_reverse_name, host) if names else None
-        hits.append(
-            BrokerHit(
-                host=host,
-                port=port,
-                serials=serials,
-                leaves=leaves,
-                first_message_after=first,
-                hostname=hostname,
-                guess=classify(hostname, serials),
+    async def listen(host: str) -> BrokerHit:
+        async with sem:
+            got = await sample(
+                host,
+                port,
+                wait=wait,
+                heartbeat_only=heartbeat_only,
+                stop_on=stop_on,
+                connect=connect,
             )
+        hostname = await asyncio.to_thread(_reverse_name, host) if names else None
+        return BrokerHit(
+            host=host,
+            port=port,
+            serials=got.serials,
+            leaves=got.leaves,
+            first_message_after=got.first_message_after,
+            hostname=hostname,
+            guess=classify(hostname, got.serials),
+            heartbeats=got.heartbeats,
         )
+
+    open_hosts = [h for h in await asyncio.gather(*(check(h) for h in hosts)) if h]
+    if stop_on is None:
+        return list(await asyncio.gather(*(listen(h) for h in open_hosts)))
+
+    # Looking for one robot: the moment one host carries it, stop listening to the rest
+    # instead of sitting out the window on every broker that will never match.
+    tasks = [asyncio.create_task(listen(h)) for h in open_hosts]
+    hits: list[BrokerHit] = []
+    try:
+        for done in asyncio.as_completed(tasks):
+            hit = await done
+            hits.append(hit)
+            if stop_on in hit.serials:
+                break
+    finally:
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
     return hits
 
 
