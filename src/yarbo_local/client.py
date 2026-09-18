@@ -171,16 +171,21 @@ class YarboRobot:
             COMMANDS[action], allow_candidates=self.session.allow_candidates
         )
 
-    async def dock(self) -> None:
-        """Send the robot home. Also clears a latched fault, which ``resume`` cannot."""
-        await self._act(Action.DOCK)
+    async def act(self, action: Action) -> None:
+        """Run a moving action: pre-flight first, then the verified command behind it.
 
-    async def resume(self) -> None:
-        """Resume a paused plan."""
-        await self._act(Action.RESUME)
-
-    async def _act(self, action: Action) -> None:
+        Raises :class:`PreflightError` with the reasons when it cannot work now, and
+        :class:`CommandRefusedError` while the command behind it is still unverified.
+        """
         refusals = check(action, self.state, connected=self.session.connected)
         if refusals:
             raise PreflightError(action, refusals)
         await self.session.send(COMMANDS[action])
+
+    async def dock(self) -> None:
+        """Send the robot home. Also clears a latched fault, which ``resume`` cannot."""
+        await self.act(Action.DOCK)
+
+    async def resume(self) -> None:
+        """Resume a paused plan."""
+        await self.act(Action.RESUME)
