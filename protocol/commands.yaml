@@ -568,6 +568,31 @@ commands:
       kept as sent. No get_controller was needed. Still a candidate: it writes the map.
     source: steves2j (verb pattern); stored record on 3.14.11
 
+  preview_plan_path:
+    payload: {id: int, percent: int}
+    ack: data_feedback
+    controller: unknown
+    risk: safe
+    status: candidate
+    notes: >-
+      The route a plan would take, computed by the robot without moving. Payload as steves2j sends it,
+      id and percent.
+    source: steves2j
+
+  read_mower_area_params:
+    payload: {id: int}
+    ack: data_feedback
+    controller: false
+    risk: safe
+    status: candidate
+    observed: fixtures/3.14.11/plan-start-from-dock.jsonl
+    notes: >-
+      Sent by the app on 2026-09-18 before and after a start; state 0, msg "Mower area settings loaded
+      successfully." The mowing settings of one area: gap, route_order, edge_circles, contract_dis,
+      first_clean_params {blade_height, blade_speed, plan_speed, route_angle, route_dis, turn_type, ...},
+      double_clean_params, sensor switches and the move-to-area offsets.
+    source: observed from the app
+
   read_recharge_point:
     payload: {}
     ack: data_feedback
