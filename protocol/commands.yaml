@@ -148,6 +148,7 @@ commands:
     payload: {}
     ack: plan_feedback
     controller: true
+    awake: true
     risk: safe
     status: verified
     firmware: 3.14.11
