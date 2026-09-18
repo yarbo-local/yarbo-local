@@ -593,6 +593,18 @@ commands:
       double_clean_params, sensor switches and the move-to-area offsets.
     source: observed from the app
 
+  save_mower_area_params:
+    payload: {id: int, gap: float, route_order: int, edge_circles: int, edge_direction_mode: int, contract_dis: float, first_clean_params: {blade_height, blade_speed, plan_speed, route_angle, route_dis, turn_type, land_push_pod_place}, double_clean_params: {}, mapping_module_type: int}
+    ack: data_feedback
+    controller: unknown
+    risk: confirm
+    status: candidate
+    observed: fixtures/3.14.11/plan-start-from-dock.jsonl
+    notes: >-
+      Sent by the app on 2026-09-18 with 31 keys, acked state 0 with empty data. The mowing settings of
+      one area; the app sends the whole record, not a patch.
+    source: observed from the app
+
   read_recharge_point:
     payload: {}
     ack: data_feedback
