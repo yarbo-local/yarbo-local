@@ -7,6 +7,7 @@ The library talks to the anonymous broker on the robot and to nothing else.
 
 from __future__ import annotations
 
+from .blackbox import FlightRecorder
 from .client import YarboRobot
 from .exceptions import (
     CommandError,
@@ -62,6 +63,7 @@ __all__ = [
     "Fault",
     "Feedback",
     "FinishReason",
+    "FlightRecorder",
     "GgaFix",
     "GpsReference",
     "LifecycleEvent",

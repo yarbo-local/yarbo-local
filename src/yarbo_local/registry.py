@@ -148,6 +148,11 @@ class Registry:
     def verified(self) -> list[Command]:
         return [c for c in self._commands.values() if c.verified]
 
+    @property
+    def verified_firmware(self) -> frozenset[str]:
+        """Firmware versions on which at least one command was verified on a real robot."""
+        return frozenset(c.firmware for c in self.verified if c.firmware)
+
     def sendable(self, name: str, *, allow_candidates: bool = False) -> bool:
         """True when ``name`` may be sent, so a caller can offer a control only when it works.
 

@@ -40,3 +40,7 @@ def test_confirm_risk_needs_flag(registry: Registry) -> None:
 def test_unknown_command(registry: Registry) -> None:
     with pytest.raises(CommandRefusedError, match="not a registered"):
         registry.get("frobnicate")
+
+
+def test_verified_firmware_lists_what_the_evidence_covers() -> None:
+    assert Registry.default().verified_firmware == {"3.14.11"}
