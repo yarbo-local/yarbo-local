@@ -92,13 +92,11 @@ def test_pause_and_stop() -> None:
 def test_controls_exist_only_for_verified_commands() -> None:
     registry = Registry.default()
     offered = {action for action in Action if registry.sendable(COMMANDS[action])}
-    assert offered == {Action.DOCK, Action.RESUME, Action.PAUSE, Action.START}, (
-        "stop has no capture yet; it must not be offered. When it is verified in "
-        "commands.yaml this set grows, and so does every user interface."
-    )
+    assert offered == set(Action), "every moving action is verified on 3.14.11"
     assert not registry.sendable("cmd_vel"), "forbidden"
     assert not registry.sendable("no_such_command")
-    assert registry.sendable("stop", allow_candidates=True)
+    assert not registry.sendable("cmd_buzzer"), "still a candidate"
+    assert registry.sendable("cmd_buzzer", allow_candidates=True)
 
 
 @pytest.fixture
@@ -146,7 +144,7 @@ async def test_resume_and_its_refusal(sim: Simulator) -> None:
     await asyncio.sleep(0.05)
     assert robot.state.plan_running
     assert robot.can(Action.PAUSE)
-    assert not robot.can(Action.STOP), "stop is not verified yet"
+    assert robot.can(Action.STOP)
     await robot.close()
 
 
@@ -216,3 +214,18 @@ def test_plan_errors_get_words_only_when_the_app_was_seen_saying_them() -> None:
     assert unknown is not None
     assert unknown.key is None
     assert unknown.description == "Plan error -24", "borrowed meanings are not shown as fact"
+
+
+async def test_stop_ends_the_plan_where_it_is(sim: Simulator) -> None:
+    sim.snapshot["StateMSG"] = {**sim.snapshot["StateMSG"], "on_going_planning": 3}
+    robot = await _robot(sim)
+    await robot.wake()
+    await asyncio.sleep(0.05)
+    await robot.stop()
+    await asyncio.sleep(0.05)
+    assert sim.log[-1] == ("stop", {})
+    assert not robot.state.plan_running
+    assert robot.state.pause_reason is None, "a stop is not a pause"
+    with pytest.raises(PreflightError):
+        await robot.stop()
+    await robot.close()

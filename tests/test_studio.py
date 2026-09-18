@@ -121,7 +121,7 @@ async def test_console_obeys_registry(client: TestClient) -> None:
     assert reply["ok"] is True
     assert reply["latency_ms"] >= 0
 
-    r = await client.post("/api/command", json={"name": "stop", "payload": {}})
+    r = await client.post("/api/command", json={"name": "cmd_buzzer", "payload": {}})
     assert r.status == 400
     assert "candidate" in (await r.json())["error"]
 

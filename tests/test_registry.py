@@ -13,7 +13,7 @@ def test_loads_verified_and_candidates(registry: Registry) -> None:
     assert "get_device_msg" in registry
     assert registry.get("get_device_msg").verified
     assert registry.get("get_device_msg").evidence
-    assert not registry.get("stop").verified
+    assert not registry.get("cmd_buzzer").verified
     assert len(registry.verified) >= 10
 
 
@@ -27,8 +27,8 @@ def test_forbidden_are_never_registered(registry: Registry) -> None:
 
 def test_candidates_need_opt_in(registry: Registry) -> None:
     with pytest.raises(CommandRefusedError, match="candidate"):
-        registry.check("stop", allow_candidates=False, confirmed=False)
-    assert registry.check("stop", allow_candidates=True, confirmed=False).name == "stop"
+        registry.check("cmd_buzzer", allow_candidates=False, confirmed=False)
+    assert registry.check("cmd_buzzer", allow_candidates=True, confirmed=False).name == "cmd_buzzer"
 
 
 def test_confirm_risk_needs_flag(registry: Registry) -> None:

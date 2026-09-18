@@ -368,3 +368,14 @@ def test_a_stop_from_the_app_reads_as_a_pause_then_a_stop_four_seconds_later() -
     assert tracker.current is None
     assert tracker.last_completed == {}, "a stopped run is not a completed one"
     assert activities[-1] is Activity.IDLE, "it stays where it is; it does not go home"
+
+
+def test_our_own_start_then_stop_is_a_run_that_ends_stopped() -> None:
+    tracker = PlanTracker()
+    events, activities = replay(tracker, FIXTURES / "plan-start-then-stop.jsonl")
+    assert [(e.kind, e.reason) for e in events] == [
+        (EventKind.STARTED, None),
+        (EventKind.FINISHED, "stopped"),
+    ]
+    assert events[0].plan_id == 2
+    assert activities[-1] is Activity.IDLE

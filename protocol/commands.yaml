@@ -180,16 +180,20 @@ commands:
     payload: {}
     ack: plan_feedback
     controller: true
+    awake: true
     risk: safe
-    status: candidate
+    status: verified
+    firmware: 3.14.11
+    evidence: fixtures/3.14.11/plan-start-then-stop.jsonl
     notes: >-
-      Still a candidate: the command itself has not been seen. On 2026-09-18 Stop was pressed in the
-      app while it was not on the local broker (no app publish of any kind, keep-alives included, so
-      it went through the vendor's cloud), and only the effect was recorded, in
-      fixtures/3.14.11/plan-stopped-from-app-effects-only.jsonl: the same frame as a pause (planning 1
-      to 0, planning_paused 1, plan_msg "Goal canceled "), then planning_paused back to 0 four seconds
-      later with planning still 0. The robot stays where it is and does not go home.
-    source: bridge headers
+      Sent by us on 2026-09-18, six seconds after our own start_plan, while the robot was heading
+      to the area: on_going_planning went 3 to 0 within a second, with no pause code and no
+      data_feedback, exactly as when Stop was pressed in the app in the same phase. Pressed in the
+      app while the robot was mowing, the state first read as a pause (planning_paused 1, plan_msg
+      "Goal canceled ") and cleared four seconds later; see plan-stopped-from-app-effects-only.jsonl,
+      where the app's own publish went through the vendor's cloud and was not seen. The robot stays
+      where it is; it does not go home. The payload {} comes from the community projects.
+    source: bridge headers; sent by us
 
   cmd_recharge:
     payload: {cmd: 2}

@@ -201,6 +201,10 @@ class YarboRobot:
         """Resume a paused plan."""
         await self.act(Action.RESUME)
 
+    async def stop(self) -> None:
+        """End the plan where the robot is. It stays there; ``dock()`` sends it home."""
+        await self.act(Action.STOP)
+
     async def pause(self) -> None:
         """Pause the running plan where it is."""
         await self.act(Action.PAUSE)

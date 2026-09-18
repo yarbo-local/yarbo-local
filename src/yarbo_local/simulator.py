@@ -228,6 +228,12 @@ class Simulator:
         if self.snapshot.get("StateMSG", {}).get("on_going_planning") in (1, 3):
             self._set_state(on_going_planning=0, planning_paused=1, plan_msg="Goal canceled ")
 
+    def cmd_stop(self, value: Any) -> None:
+        """As seen on 3.14.11: the plan ends where it is, with no pause code and no reply."""
+        state = self.snapshot.get("StateMSG", {})
+        if state.get("on_going_planning") in (1, 2, 3) or state.get("planning_paused"):
+            self._set_state(on_going_planning=0, planning_paused=0, plan_msg="Goal canceled ")
+
     def cmd_start_plan(self, value: Any) -> None:
         """As seen on 3.14.11: route calculation (2), or -12 when no plan or route exists."""
         known = {plan.get("id") for plan in self.plans if isinstance(plan, dict)}
