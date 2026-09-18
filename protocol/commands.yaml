@@ -549,6 +549,25 @@ commands:
     verified_notes: "data is a base64 string of zlib JSON, same envelope as get_map."
     source: bridge headers
 
+  save_charging_point:
+    payload: {id: int, name: str, enable: bool, hasChargingStation: int, chargingPoint: {x, y, phi}, startPoint: {x, y, phi}, straightPhi: float}
+    ack: data_feedback
+    controller: unknown
+    risk: confirm
+    status: candidate
+    notes: >-
+      Never seen on the wire. The name follows the community's save_X verb pattern and the payload is
+      the stored dock record as read_recharge_point returns it. In the one record seen, startPoint is
+      exactly 1.0 m from chargingPoint along straightPhi, startPoint.phi equals straightPhi, and
+      chargingPoint.phi is 0.0. The robot backs onto the dock and ends with its heading close to
+      straightPhi, so straightPhi points from the dock out to its open side.
+      Sent by us twice on 2026-09-18 with id 1: state 0, the reply carries the stored record, the dock is
+      edited in place (still one record) and the robot re-links pathways whose ends are near the new
+      point. The robot RECOMPUTES startPoint: sent 2.5 m out along straightPhi, it stored 1.0 m. So the
+      line-up distance is fixed by the firmware and cannot be set here. chargingPoint and straightPhi are
+      kept as sent. No get_controller was needed. Still a candidate: it writes the map.
+    source: steves2j (verb pattern); stored record on 3.14.11
+
   read_recharge_point:
     payload: {}
     ack: data_feedback
