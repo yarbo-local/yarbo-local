@@ -208,6 +208,26 @@ class Simulator:
             "get_controller", 0, "Successfully connected to the physical controller.", ""
         )
 
+    def _set_state(self, **fields: Any) -> None:
+        self.snapshot = {
+            **self.snapshot,
+            "StateMSG": {**self.snapshot.get("StateMSG", {}), **fields},
+        }
+        self.tick()
+
+    def cmd_resume(self, value: Any) -> None:
+        """As seen on 3.14.11: a paused plan heads back to its area; there is no data_feedback."""
+        state = self.snapshot.get("StateMSG", {})
+        if state.get("planning_paused"):
+            self._set_state(on_going_planning=3, planning_paused=0, error_code=0, plan_msg="")
+        else:
+            self._set_state(plan_msg="Goal canceled ")
+
+    def cmd_cmd_recharge(self, value: Any) -> None:
+        """As seen on 3.14.11: the fault clears and the robot sets off on its path home."""
+        if isinstance(value, dict) and value.get("cmd") == 2:
+            self._set_state(on_going_planning=0, on_going_recharging=1, error_code=0)
+
     def cmd_read_all_plan(self, value: Any) -> None:
         self._feedback("read_all_plan", 0, "", {"data": list(self.plans)})
 

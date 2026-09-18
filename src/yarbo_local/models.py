@@ -472,7 +472,10 @@ class RobotState:
         if self.error_code != 0:
             return Activity.ERROR
         p = self.planning_code
-        if p in PLANNING_RUNNING and self.paused_code > 0:
+        # Seen on 3.14.11: a paused plan reports planning 0 with the pause code set, so
+        # "running and paused" never matches. The pause code also lingers on the way home
+        # and for some seconds on the dock, where it no longer means paused.
+        if self.paused_code > 0 and not self.returning and not self.charging:
             return Activity.PAUSED
         if p == 2:
             return Activity.CALCULATING_ROUTE

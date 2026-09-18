@@ -13,10 +13,13 @@ from .exceptions import (
     CommandRefusedError,
     ConnectionLostError,
     ControllerError,
+    PreflightError,
     ReplyTimeoutError,
     RobotNotFoundError,
     YarboError,
 )
+from .feedback import AreaProgress, BarrierPoints, PlanFeedback, RechargeFeedback
+from .lifecycle import EventKind, FinishReason, LifecycleEvent, Phase, PlanTracker
 from .models import (
     Activity,
     ChargingPoint,
@@ -30,6 +33,7 @@ from .models import (
     Zone,
 )
 from .obstacles import Barrier, ObstacleTracker, Run
+from .preflight import Action, Refusal
 from .registry import Command, Registry
 from .resolve import resolve
 from .session import Session
@@ -39,23 +43,35 @@ from .transport import FakeBroker, FakeTransport, MqttTransport
 __version__ = "0.1.0.dev0"
 
 __all__ = [
+    "Action",
     "Activity",
+    "AreaProgress",
     "Barrier",
+    "BarrierPoints",
     "ChargingPoint",
     "Command",
     "CommandError",
     "CommandRefusedError",
     "ConnectionLostError",
     "ControllerError",
+    "EventKind",
     "FakeBroker",
     "FakeTransport",
     "Fault",
     "Feedback",
+    "FinishReason",
     "GgaFix",
     "GpsReference",
+    "LifecycleEvent",
     "MqttTransport",
     "ObstacleTracker",
+    "Phase",
+    "PlanFeedback",
     "PlanSummary",
+    "PlanTracker",
+    "PreflightError",
+    "RechargeFeedback",
+    "Refusal",
     "Registry",
     "ReplyTimeoutError",
     "RobotNotFoundError",

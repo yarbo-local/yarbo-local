@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+from typing import Any
+
 
 class YarboError(Exception):
     """Base class for all library errors."""
@@ -35,3 +38,17 @@ class ReplyTimeoutError(YarboError, TimeoutError):
 
 class ControllerError(YarboError):
     """The robot did not grant the controller role."""
+
+
+class PreflightError(YarboError):
+    """A command that moves the robot was refused before sending, with the reasons.
+
+    ``refusals`` holds :class:`yarbo_local.preflight.Refusal` items, each with a ``key``
+    a user interface can translate.
+    """
+
+    def __init__(self, action: str, refusals: Sequence[Any]) -> None:
+        self.action = str(action)
+        self.refusals = tuple(refusals)
+        reasons = "; ".join(str(getattr(r, "message", r)) for r in self.refusals)
+        super().__init__(f"{self.action} refused: {reasons}")

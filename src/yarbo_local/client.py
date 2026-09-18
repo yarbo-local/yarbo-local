@@ -8,7 +8,7 @@ import contextlib
 from types import TracebackType
 from typing import Any
 
-from .exceptions import ConnectionLostError
+from .exceptions import ConnectionLostError, PreflightError
 from .models import (
     Feedback,
     GpsReference,
@@ -20,6 +20,7 @@ from .models import (
     parse_plans,
     parse_site_map,
 )
+from .preflight import COMMANDS, Action, check
 from .registry import Registry
 from .session import Session, StateListener
 from .transport import MqttTransport, Transport
@@ -163,3 +164,23 @@ class YarboRobot:
 
     async def wake(self) -> bool:
         return await self.session.wake()
+
+    def can(self, action: Action) -> bool:
+        """Whether the command behind ``action`` is verified, so a control may be offered."""
+        return self.session.registry.sendable(
+            COMMANDS[action], allow_candidates=self.session.allow_candidates
+        )
+
+    async def dock(self) -> None:
+        """Send the robot home. Also clears a latched fault, which ``resume`` cannot."""
+        await self._act(Action.DOCK)
+
+    async def resume(self) -> None:
+        """Resume a paused plan."""
+        await self._act(Action.RESUME)
+
+    async def _act(self, action: Action) -> None:
+        refusals = check(action, self.state, connected=self.session.connected)
+        if refusals:
+            raise PreflightError(action, refusals)
+        await self.session.send(COMMANDS[action])

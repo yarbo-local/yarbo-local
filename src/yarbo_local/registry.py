@@ -148,6 +148,16 @@ class Registry:
     def verified(self) -> list[Command]:
         return [c for c in self._commands.values() if c.verified]
 
+    def sendable(self, name: str, *, allow_candidates: bool = False) -> bool:
+        """True when ``name`` may be sent, so a caller can offer a control only when it works.
+
+        A control that appears the day its command is verified, with no code change, is
+        how "only verified protocol ships" stays true in a user interface.
+        """
+        if name not in self._commands or self.is_forbidden(name):
+            return False
+        return self._commands[name].verified or allow_candidates
+
     def is_forbidden(self, name: str) -> bool:
         for names in self._forbidden.values():
             for pattern in names:

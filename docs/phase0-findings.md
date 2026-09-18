@@ -144,6 +144,17 @@ On 2026-09-14 and 15 the robot ran "east lawn plan" (area 4, 512 m2) and "west l
 
 Settled on 2026-09-18 with `yarbo-local sitecheck`: a session to the rover and a session to the base station relay, open at the same time for the same serial, both stayed connected, and both answered `get_device_msg` (72 and 83 ms), `read_all_plan` and `get_map` with the robot asleep. Neither saw traffic for any other serial. So both brokers accept simultaneous sessions and both relay requests, not only telemetry. Whether a relay ever carries a second rover is still unknown; `docs/multi-robot.md` is the request for that.
 
+## 18. Plan lifecycle on the wire
+
+From the West Lawn afternoon of 2026-09-15 (eight tilt faults, one emergency stop, eight resumes, then sent home). Fixtures: `mower-pro-run-faults-estop.jsonl`, `return-to-dock-from-fault.jsonl`.
+
+- **A paused plan reports `on_going_planning` 0.** With a fault the frame reads planning 0, `planning_paused` 7, `error_code` 902; after an emergency stop, planning 0, paused 4, no error. The vendor SDK's rule, "planning is running and paused is set", never matches, and a rule that ends a run when planning leaves the running codes would have ended this run nine times. Our own `Activity` had the same bug and showed an emergency-stopped robot as idle.
+- **`plan_feedback` is published only while the plan moves.** It stopped within a second of every pause (gaps of 238 s and 98 s) and started again on resume with the same `planId` and `startTime`, so those two fields identify a run across pauses. `state` mirrors `on_going_planning` (1, 3). `runningState` took the values 0, 3, 11, 16 and 17 for a second or two at a time; their meaning is unknown.
+- **Progress is `finishCleanArea / totalCleanArea`**: 49.9 percent when recording began, 89.3 percent at the last fault. `actualCleanArea` runs a few points lower. `duration` counts seconds of work and does not advance while paused; `leftTime` is seconds.
+- **Resume goes through "heading to area".** Each `app/resume {}` took the robot to planning 3 within two seconds, then to 1 some twenty seconds later. There is no `data_feedback`.
+- **Going home ends the run, and the pause code lags.** After `cmd_recharge`, `on_going_recharging` went 1, then 3, then 0 while `planning_paused` still read 7. It cleared about 15 s after docking, before charging began, so for those seconds the pause code is the only thing set.
+- **Still not seen:** a plan starting (planning 2, then 3, then 1), a plan completing (5), a stop from the app, and a low-battery return that resumes by itself. `lifecycle.py` handles those by the vendor's and the jtubb fork's rules, and says so.
+
 ## Values settled
 
 - `set_sound_param.vol` scale: `StateMSG.volume` is a float 0 to 1, matching the vendor SDK.

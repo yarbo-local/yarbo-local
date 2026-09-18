@@ -146,12 +146,17 @@ commands:
     payload: {}
     ack: plan_feedback
     controller: true
+    awake: true
     risk: safe
-    status: candidate
+    status: verified
+    firmware: 3.14.11
+    evidence: fixtures/3.14.11/mower-pro-run-faults-estop.jsonl
     notes: >-
-      Observed from the app nine times on 2026-09-15. It cleared fault 902 while the plan was
-      still loaded, but not after the robot had slept on the fault: then the robot answered
-      plan_msg "Goal canceled" and stayed at planning_paused 7.
+      Sent by the app eight times on 2026-09-15, and each time the robot left planning_paused
+      (7 after a fault, 4 after an emergency stop) for on_going_planning 3 or 1 within two
+      seconds. There is no data_feedback; the state change is the acknowledgement. It does not
+      work once the robot has slept on a fault: then it answers plan_msg "Goal canceled" and
+      stays paused, and cmd_recharge is what clears it. Only ever sent to an awake robot.
     source: bridge headers; observed from the app
 
   stop:
@@ -166,6 +171,7 @@ commands:
     payload: {cmd: 2}
     ack: recharge_feedback
     controller: true
+    awake: true
     risk: safe
     status: verified
     firmware: 3.14.11
