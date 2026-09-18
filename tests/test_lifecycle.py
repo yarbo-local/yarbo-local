@@ -353,3 +353,18 @@ def test_completion_is_taken_from_feedback_even_when_progress_falls_short() -> N
     events = tracker.on_plan_feedback(feedback, 500.0)
     assert [e.reason for e in events] == ["completed"]
     assert tracker.on_state(state_of(on_going_recharging=2), 501.0) == []
+
+
+def test_a_stop_from_the_app_reads_as_a_pause_then_a_stop_four_seconds_later() -> None:
+    """Effects only: the app's command went through the vendor's cloud and was not seen."""
+    tracker = PlanTracker()
+    events, activities = replay(tracker, FIXTURES / "plan-stopped-from-app-effects-only.jsonl")
+    assert [(e.kind, e.reason) for e in events] == [
+        (EventKind.PAUSED, "manual"),
+        (EventKind.FINISHED, "stopped"),
+    ]
+    assert events[-1].progress is not None
+    assert 45.0 < events[-1].progress < 55.0
+    assert tracker.current is None
+    assert tracker.last_completed == {}, "a stopped run is not a completed one"
+    assert activities[-1] is Activity.IDLE, "it stays where it is; it does not go home"
