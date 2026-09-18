@@ -116,10 +116,14 @@ def _resolve_host(host: str, port: int, fallback: str | None, serial: str | None
     """Return ``host`` if its broker port answers, else the first scan hit (matching serial)."""
     if not fallback:
         return host
-    if asyncio.run(discover._tcp_open(host, port, 1.5)):
+    if asyncio.run(discover.tcp_open(host, port, 1.5)):
         return host
     print(f"{host}:{port} not answering; scanning {fallback}", file=sys.stderr)
-    hits = asyncio.run(discover.discover(discover.expand(fallback), port=port, wait=6.0))
+    hits = asyncio.run(
+        discover.discover(
+            discover.expand(fallback), port=port, wait=6.0, heartbeat_only=True, names=False
+        )
+    )
     for hit in hits:
         if hit.serials and (serial is None or serial in hit.serials):
             print(f"using {hit.host} ({hit.serials})", file=sys.stderr)

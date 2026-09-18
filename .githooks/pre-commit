@@ -1,0 +1,11 @@
+#!/bin/sh
+# Refuse a commit whose fixtures contain your site's real position or serial.
+# Enable once per clone:  git config core.hooksPath .githooks
+# The needles come from your own unredacted captures/ (never committed). Without
+# captures there is nothing to compare against, and the check says so and passes.
+if git diff --cached --name-only | grep -qE '^(protocol|tests)/'; then
+  uv run --quiet python scripts/leak_check.py || {
+    echo "pre-commit: leak check failed; nothing was committed" >&2
+    exit 1
+  }
+fi

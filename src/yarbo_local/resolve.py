@@ -41,10 +41,12 @@ async def resolve(
         if resolved and resolved not in candidates:
             candidates.append(resolved)
     for host in candidates:
-        if await discover._tcp_open(host, port, connect_timeout):
+        if await discover.tcp_open(host, port, connect_timeout):
             return host
     if subnet:
-        hits = await discover.discover(discover.expand(subnet), port=port, wait=scan_wait)
+        hits = await discover.discover(
+            discover.expand(subnet), port=port, wait=scan_wait, heartbeat_only=True, names=False
+        )
         for hit in hits:
             if hit.serials and (serial is None or serial in hit.serials):
                 return hit.host

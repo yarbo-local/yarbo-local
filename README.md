@@ -2,7 +2,7 @@
 
 Local-first tooling and, later, the asyncio library behind a Home Assistant integration for Yarbo robots. It talks to the anonymous MQTT broker the robot runs on your LAN and to nothing else. No Yarbo account, no vendor servers, no telemetry.
 
-Status: **Phase 1, pre-alpha.** Phase 0 validated the protocol on real hardware (firmware 3.14.11) and produced the knowledge base in `protocol/`. The library core now exists: a registry-gated session, typed state, a fixture-driven simulator and a small client. The Home Assistant integration (`yarbo-local-ha`) and the dashboard card (`yarbo-local-card`) are next. The plan is in the proposal linked below.
+Status: **pre-alpha.** Phase 0 validated the protocol on real hardware (firmware 3.14.11) and produced the knowledge base in `protocol/`: 19 commands verified with captures, the rest marked as candidates that cannot be sent. The library core is in place: a registry-gated session, typed state, the map, a fixture-driven simulator and a small client. The Home Assistant integration ([yarbo-local-ha](https://github.com/yarbo-local/yarbo-local-ha)) shows the robot and its map but does not control it yet, and the dashboard card ([yarbo-local-card](https://github.com/yarbo-local/yarbo-local-card)) draws the map, the robot and plan progress. Next is plan control: pause, resume, stop and start, each verified against the robot first. Not on PyPI yet.
 
 ## What is here
 
@@ -20,7 +20,7 @@ Status: **Phase 1, pre-alpha.** Phase 0 validated the protocol on real hardware 
 | `src/yarbo_local/codec.py` | zlib-or-plain JSON codec with the firmware rule and an observed-encoding fallback. |
 | `src/yarbo_local/capture.py` | `sniff`: subscribe to `snowbot/+/#` and write every message to JSONL, optionally redacted. |
 | `src/yarbo_local/probe.py` | `probe`: send one allowlisted command, show the correlated reply and the telemetry deltas. |
-| `src/yarbo_local/discover.py` | `discover`: find brokers carrying `snowbot` traffic and classify them. |
+| `src/yarbo_local/discover.py` | `discover`: find brokers carrying `snowbot` traffic, identified by the serial in their topics. |
 | `src/yarbo_local/dump.py` | `dump`: summarise a capture, including the full `DeviceMSG` key inventory. |
 | `src/yarbo_local/redact.py` | Serial, MAC, IP, coordinate and Wi-Fi redaction for shareable fixtures. |
 | `protocol/` | The knowledge base: `commands.yaml`, `fields.yaml`, `codes.yaml`, `fixtures/`. |
@@ -87,7 +87,7 @@ Do not spend an afternoon on this. Scan the subnet instead:
 uv run yarbo-local discover 192.168.1.0/24 --wait 8
 ```
 
-Every host carrying Yarbo traffic is listed with its MAC and a classification. The rover shows up under the vendor's Wi-Fi radio; the base station shows up behind the bridge MAC. Then protect yourself from the address collision Yarbo set up for you: either shrink your DHCP pool so it starts above the base station's address, or put the Yarbo Wi-Fi association on an isolated VLAN so the whole bridge moves out of your main network.
+Every host carrying Yarbo traffic is listed with the serial it carries and its DNS name, if it has one. A robot is identified by its own topics and nothing else; the tool reads no ARP table and runs no other program. The rover and the base station both answer, with the same data. Then protect yourself from the address collision Yarbo set up for you: either shrink your DHCP pool so it starts above the base station's address, or put the Yarbo Wi-Fi association on an isolated VLAN so the whole bridge moves out of your main network.
 
 ## Safety and privacy
 

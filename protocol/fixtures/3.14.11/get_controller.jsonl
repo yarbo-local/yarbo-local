@@ -1,0 +1,5 @@
+{"t":1789515460.766,"ts":"2026-09-15T23:37:40.766+00:00","topic":"snowbot/SN-2ff7e172/device/heart_beat","bytes":19,"enc":"json","payload":{"working_state":0}}
+{"t":1789515461.767,"ts":"2026-09-15T23:37:41.766+00:00","topic":"snowbot/SN-2ff7e172/device/heart_beat","bytes":19,"enc":"json","payload":{"working_state":1}}
+{"t":1789515461.845,"ts":"2026-09-15T23:37:41.845+00:00","topic":"snowbot/SN-2ff7e172/app/get_controller","bytes":10,"enc":"zlib","payload":{}}
+{"t":1789515461.887,"ts":"2026-09-15T23:37:41.887+00:00","topic":"snowbot/SN-2ff7e172/device/data_feedback","bytes":95,"enc":"zlib","payload":{"data":"","msg":"Successfully connected to the physical controller.","state":0,"topic":"get_controller"}}
+{"t":1789515463.772,"ts":"2026-09-15T23:37:43.771+00:00","topic":"snowbot/SN-2ff7e172/device/heart_beat","bytes":19,"enc":"json","payload":{"working_state":1}}

@@ -108,7 +108,37 @@ async def test_verified_read_passes_rules(sim: Simulator, transport: FakeTranspo
     await asyncio.wait_for(task, 1.0)
 
 
-async def test_controller_is_candidate_until_verified(
+async def test_controller_needs_no_opt_in_once_verified(
+    sim: Simulator, transport: FakeTransport
+) -> None:
+    """get_controller is verified, so a verified command that needs the role can be sent."""
+    session = Session(transport, serial=sim.serial)
+    task = await _running(session)
+    sim.tick()
+    await session.wait_ready(1.0)
+    await session.ensure_controller(timeout=1.0)
+    assert sim.controller_holder == "session"
+    session.stop()
+    transport.drop()
+    await asyncio.wait_for(task, 1.0)
+
+
+async def test_reads_never_take_the_controller(sim: Simulator, transport: FakeTransport) -> None:
+    """The phone app loses the role when we take it, so a read must leave it alone."""
+    session = Session(transport, serial=sim.serial)
+    task = await _running(session)
+    sim.tick()
+    await session.wait_ready(1.0)
+    await session.request("read_all_plan", timeout=1.0)
+    await session.request("get_map", timeout=1.0)
+    assert sim.controller_holder is None
+    assert "get_controller" not in [name for name, _ in sim.log]
+    session.stop()
+    transport.drop()
+    await asyncio.wait_for(task, 1.0)
+
+
+async def test_refused_candidate_does_not_take_the_controller(
     sim: Simulator, transport: FakeTransport
 ) -> None:
     session = Session(transport, serial=sim.serial)
@@ -116,21 +146,9 @@ async def test_controller_is_candidate_until_verified(
     sim.tick()
     await session.wait_ready(1.0)
     with pytest.raises(CommandRefusedError, match="candidate"):
-        await session.ensure_controller(timeout=1.0)
+        await session.send("start_plan", {"id": 1})
     assert sim.controller_holder is None
     assert not transport.published
-    session.stop()
-    transport.drop()
-    await asyncio.wait_for(task, 1.0)
-
-
-async def test_controller_with_opt_in(sim: Simulator, transport: FakeTransport) -> None:
-    session = Session(transport, serial=sim.serial, allow_candidates=True)
-    task = await _running(session)
-    sim.tick()
-    await session.wait_ready(1.0)
-    await session.ensure_controller(timeout=1.0)
-    assert sim.controller_holder == "session"
     session.stop()
     transport.drop()
     await asyncio.wait_for(task, 1.0)

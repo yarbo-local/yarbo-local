@@ -2,10 +2,11 @@
 
 The registry is the allowlist. A command that is not in it cannot be sent. A
 command whose status is ``candidate`` cannot be sent either unless the caller
-explicitly opts in, which the Studio does and the Home Assistant integration
-never does. Commands with risk ``confirm`` need an explicit confirmation flag
-per call. Forbidden names are not entries at all; they exist only so tests can
-assert nobody registered one.
+explicitly opts in. Neither the Studio nor the Home Assistant integration ever
+does; opting in is for deliberate experiments from a script, recorded as they
+run. Commands with risk ``confirm`` need an explicit confirmation flag per call.
+Forbidden names are not entries at all; they exist only so tests can assert
+nobody registered one.
 """
 
 from __future__ import annotations

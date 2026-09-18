@@ -63,3 +63,8 @@ def device(serial: str, leaf: str) -> str:
 def all_for(serial: str | None = None) -> str:
     """Wildcard covering both sides for one serial, or every serial."""
     return f"{PREFIX}/{serial or '+'}/#"
+
+
+def heartbeats() -> str:
+    """Every robot's heartbeat: sent awake or asleep, and enough to learn a serial."""
+    return f"{PREFIX}/+/device/heart_beat"

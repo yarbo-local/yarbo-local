@@ -23,8 +23,10 @@ Run the leak check. It reads your own unredacted captures from `captures/` (neve
 uv run python scripts/leak_check.py
 ```
 
-To run it on every commit that touches `protocol/`, install it as a local hook:
+The repository ships the check as a pre-commit hook in `.githooks/`. Enable it once per clone, so a commit touching `protocol/` or `tests/` cannot go through with a leak in it:
 
 ```bash
-printf '#!/bin/sh\ngit diff --cached --name-only | grep -q "^protocol/" && exec uv run --quiet python scripts/leak_check.py\nexit 0\n' > .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+git config core.hooksPath .githooks
 ```
+
+`yarbo-local-ha` and `yarbo-local-card` carry the same hook for their own fixtures and demo data; it runs this script from a sibling clone of this repository.

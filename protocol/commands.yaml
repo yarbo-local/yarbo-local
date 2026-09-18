@@ -44,9 +44,15 @@ commands:
     ack: data_feedback
     controller: n/a
     risk: safe
-    status: candidate
-    notes: Takes the single controller role from whoever holds it, including the phone app.
-    source: python-yarbo, vendor SDK
+    status: verified
+    firmware: 3.14.11
+    evidence: fixtures/3.14.11/get_controller.jsonl
+    notes: >-
+      Takes the single controller role from whoever holds it, including the phone app, so
+      only commands that need it may trigger it; reads never do. Answered in about 40 ms on
+      2026-09-15 with state 0 and the acknowledgement text the session checks for.
+      StateMSG.machine_controller read 1 before and after, so it does not show who holds it.
+    source: python-yarbo, vendor SDK; verified on the robot
 
   set_working_state:
     payload: {state: 1, source: smart_home}

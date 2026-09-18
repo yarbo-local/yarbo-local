@@ -53,7 +53,7 @@ Not tested. Needs the phone app to create a throwaway zone while sniffing.
 
 ## 9. Controller theft
 
-Not tested. `StateMSG.machine_controller` reads 1 while idle with no app connected.
+Taking the role works: on 2026-09-15 `get_controller {}` answered on `data_feedback` in about 40 ms with state 0 and "Successfully connected to the physical controller." (fixture `get_controller.jsonl`), and `cmd_recharge` was accepted straight after. What the robot publishes when the app takes the role back is still not tested. `StateMSG.machine_controller` read 1 with no app connected, and 1 before and after we took the role, so it does not identify the holder.
 
 ## 10. Base station relay
 
