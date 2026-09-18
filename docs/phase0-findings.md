@@ -153,7 +153,18 @@ From the West Lawn afternoon of 2026-09-15 (eight tilt faults, one emergency sto
 - **Progress is `finishCleanArea / totalCleanArea`**: 49.9 percent when recording began, 89.3 percent at the last fault. `actualCleanArea` runs a few points lower. `duration` counts seconds of work and does not advance while paused; `leftTime` is seconds.
 - **Resume goes through "heading to area".** Each `app/resume {}` took the robot to planning 3 within two seconds, then to 1 some twenty seconds later. There is no `data_feedback`.
 - **Going home ends the run, and the pause code lags.** After `cmd_recharge`, `on_going_recharging` went 1, then 3, then 0 while `planning_paused` still read 7. It cleared about 15 s after docking, before charging began, so for those seconds the pause code is the only thing set.
-- **Still not seen:** a plan starting (planning 2, then 3, then 1), a plan completing (5), a stop from the app, and a low-battery return that resumes by itself. `lifecycle.py` handles those by the vendor's and the jtubb fork's rules, and says so.
+- **Still not seen:** (a start has been seen since, see 19) a plan completing (5), a stop from the app, and a low-battery return that resumes by itself. `lifecycle.py` handles those by the vendor's and the jtubb fork's rules, and says so.
+
+## 19. Starting and pausing a plan, and why a start fails silently
+
+From 2026-09-18, East Lawn plan, app on the LAN. Fixtures: `plan-start-fails-route-wp005.jsonl`, `plan-start-from-dock.jsonl`, `plan-pause-resume-app.jsonl`.
+
+- **Start.** The app sends `check_map_connectivity {"ids": [area]}`, `get_map`, then `start_plan {"id": 1, "percent": 0}`. There is no `data_feedback`. `on_going_planning` goes to 2 (calculating) within a second, to 3 a second later, and to 1 when the robot reaches the area, about three minutes here. `car_controller` turns true and `plan_feedback` starts at once with `state` 3. The app sent no `get_controller`.
+- **A start that cannot work says nothing.** The planning code goes to a negative value and stays there until the next start; there is no message, no `error_code` and no reply. -12 is what the app shows as WP005, "Failed to calculate route". `check_map_connectivity` answered three empty lists both when the start failed and when it worked, so it is no help.
+- **The cause here was a pathway not linked to the dock.** The robot computes `start_id` and `end_id` when a pathway is saved; 0 is the dock. It links a pathway to the dock only when the first point is close to the charging point: 0.27 m linked, 0.31 m did not. Re-saving the pathway with its own id and the first point moved onto the charging point turned `start_id` -1 into 0 in the reply, and the plan then started. Two pathways can hold the dock link. Links can also be lost later: "Pathway 1" had both when saved on 2026-09-14 and has neither now, though its points never changed.
+- **Pause.** `pause {}`: half a second later planning 1 to 0, `planning_paused` 1 (manual), `plan_msg` "Goal canceled " for one frame, `car_controller` false. No `data_feedback`. `resume {}` took planning straight back to 1 within a second, not through 3, because the robot had not moved.
+- **Both brokers carry the same traffic,** app publishes included, so a listener on either sees everything. They silently ignore a `#` subscription; `snowbot/+/#` works.
+- **Unexplained:** the first pause that day never crossed the local broker, and the app's 10 s keep-alive was missing for the 30 s around it, with the phone on Wi-Fi. The app presumably used the vendor's cloud for that moment.
 
 ## Values settled
 

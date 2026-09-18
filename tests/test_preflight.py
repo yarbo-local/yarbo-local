@@ -1,4 +1,4 @@
-"""Pre-flight checks, and the two controls that are verified: return to dock and resume."""
+"""Pre-flight checks, and the controls that are verified: dock, resume, pause and start."""
 
 from __future__ import annotations
 
@@ -85,13 +85,13 @@ def test_pause_and_stop() -> None:
 def test_controls_exist_only_for_verified_commands() -> None:
     registry = Registry.default()
     offered = {action for action in Action if registry.sendable(COMMANDS[action])}
-    assert offered == {Action.DOCK, Action.RESUME}, (
-        "pause, stop and start_plan have no capture yet; they must not be offered. When one is "
-        "verified in commands.yaml this set grows, and so does every user interface."
+    assert offered == {Action.DOCK, Action.RESUME, Action.PAUSE, Action.START}, (
+        "stop has no capture yet; it must not be offered. When it is verified in "
+        "commands.yaml this set grows, and so does every user interface."
     )
     assert not registry.sendable("cmd_vel"), "forbidden"
     assert not registry.sendable("no_such_command")
-    assert registry.sendable("start_plan", allow_candidates=True)
+    assert registry.sendable("stop", allow_candidates=True)
 
 
 @pytest.fixture
@@ -138,5 +138,60 @@ async def test_resume_and_its_refusal(sim: Simulator) -> None:
     await robot.resume()
     await asyncio.sleep(0.05)
     assert robot.state.plan_running
-    assert not robot.can(Action.PAUSE)
+    assert robot.can(Action.PAUSE)
+    assert not robot.can(Action.STOP), "stop is not verified yet"
+    await robot.close()
+
+
+async def test_pause_then_resume_as_the_app_does(sim: Simulator) -> None:
+    sim.snapshot["StateMSG"] = {**sim.snapshot["StateMSG"], "on_going_planning": 1}
+    robot = await _robot(sim)
+    await robot.wake()
+    await asyncio.sleep(0.05)
+    await robot.pause()
+    await asyncio.sleep(0.05)
+    assert sim.log[-1] == ("pause", {})
+    assert robot.state.pause_reason == "manual"
+    assert not robot.state.plan_running
+    await robot.resume()
+    await asyncio.sleep(0.05)
+    assert robot.state.plan_running
+    await robot.close()
+
+
+def _ready_to_mow(sim: Simulator) -> None:
+    sim.snapshot["HeadMsg"] = {**sim.snapshot.get("HeadMsg", {}), "head_type": 5}
+    sim.snapshot["RTKMSG"] = {**sim.snapshot.get("RTKMSG", {}), "status": "4"}
+
+
+async def test_start_plan_sends_the_id_and_never_the_schema(sim: Simulator) -> None:
+    _ready_to_mow(sim)
+    robot = await _robot(sim)
+    with pytest.raises(ValueError, match="plan id"):
+        await robot.act(Action.START)
+    with pytest.raises(ValueError, match="percent"):
+        await robot.start_plan(1, percent=100)
+    assert [name for name, _ in sim.log] == [], "nothing is sent without a plan"
+    sim.plans.append({"id": 1, "name": "east lawn plan", "areaIds": [4]})
+    plan_id = 1
+    await robot.wake()
+    await asyncio.sleep(0.05)
+    await robot.start_plan(plan_id)
+    await asyncio.sleep(0.05)
+    assert sim.log[-1] == ("start_plan", {"id": plan_id, "percent": 0})
+    assert robot.state.planning_code == 2, "calculating the route, as on the real robot"
+    await robot.close()
+
+
+async def test_a_start_the_robot_cannot_route_goes_negative_and_says_nothing(
+    sim: Simulator,
+) -> None:
+    _ready_to_mow(sim)
+    robot = await _robot(sim)
+    await robot.wake()
+    await asyncio.sleep(0.05)
+    await robot.start_plan(999)
+    await asyncio.sleep(0.05)
+    assert robot.state.planning_code == -12, "what the app shows as WP005"
+    assert not robot.state.plan_running
     await robot.close()

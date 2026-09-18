@@ -171,16 +171,24 @@ class YarboRobot:
             COMMANDS[action], allow_candidates=self.session.allow_candidates
         )
 
-    async def act(self, action: Action) -> None:
+    async def act(self, action: Action, *, plan_id: int | None = None, percent: int = 0) -> None:
         """Run a moving action: pre-flight first, then the verified command behind it.
 
-        Raises :class:`PreflightError` with the reasons when it cannot work now, and
-        :class:`CommandRefusedError` while the command behind it is still unverified.
+        ``Action.START`` needs ``plan_id``; ``percent`` is where in the plan to begin, and only
+        0 has been seen on the wire. Raises :class:`PreflightError` with the reasons when it
+        cannot work now, and :class:`CommandRefusedError` while the command is still unverified.
         """
+        payload: dict[str, int] | None = None
+        if action is Action.START:
+            if plan_id is None:
+                raise ValueError("starting needs a plan id")
+            if not 0 <= percent <= 99:
+                raise ValueError("percent must be 0 to 99")
+            payload = {"id": plan_id, "percent": percent}
         refusals = check(action, self.state, connected=self.session.connected)
         if refusals:
             raise PreflightError(action, refusals)
-        await self.session.send(COMMANDS[action])
+        await self.session.send(COMMANDS[action], payload)
 
     async def dock(self) -> None:
         """Send the robot home. Also clears a latched fault, which ``resume`` cannot."""
@@ -189,3 +197,11 @@ class YarboRobot:
     async def resume(self) -> None:
         """Resume a paused plan."""
         await self.act(Action.RESUME)
+
+    async def pause(self) -> None:
+        """Pause the running plan where it is."""
+        await self.act(Action.PAUSE)
+
+    async def start_plan(self, plan_id: int, *, percent: int = 0) -> None:
+        """Start a plan. A robot that cannot says nothing: ``planning_code`` goes negative."""
+        await self.act(Action.START, plan_id=plan_id, percent=percent)

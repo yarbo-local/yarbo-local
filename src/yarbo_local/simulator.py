@@ -223,6 +223,17 @@ class Simulator:
         else:
             self._set_state(plan_msg="Goal canceled ")
 
+    def cmd_pause(self, value: Any) -> None:
+        """As seen on 3.14.11: planning 0, pause code 1 (manual); there is no data_feedback."""
+        if self.snapshot.get("StateMSG", {}).get("on_going_planning") in (1, 3):
+            self._set_state(on_going_planning=0, planning_paused=1, plan_msg="Goal canceled ")
+
+    def cmd_start_plan(self, value: Any) -> None:
+        """As seen on 3.14.11: route calculation (2), or -12 when no plan or route exists."""
+        known = {plan.get("id") for plan in self.plans if isinstance(plan, dict)}
+        wanted = value.get("id") if isinstance(value, dict) else None
+        self._set_state(on_going_planning=2 if wanted in known else -12, planning_paused=0)
+
     def cmd_cmd_recharge(self, value: Any) -> None:
         """As seen on 3.14.11: the fault clears and the robot sets off on its path home."""
         if isinstance(value, dict) and value.get("cmd") == 2:

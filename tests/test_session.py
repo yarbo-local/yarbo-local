@@ -146,7 +146,7 @@ async def test_refused_candidate_does_not_take_the_controller(
     sim.tick()
     await session.wait_ready(1.0)
     with pytest.raises(CommandRefusedError, match="candidate"):
-        await session.send("start_plan", {"id": 1})
+        await session.send("stop", {})
     assert sim.controller_holder is None
     assert not transport.published
     session.stop()
@@ -162,7 +162,7 @@ async def test_candidate_refused_and_forbidden_impossible(
     sim.tick()
     await session.wait_ready(1.0)
     with pytest.raises(CommandRefusedError, match="candidate"):
-        await session.send("start_plan", {"id": 1})
+        await session.send("stop", {})
     with pytest.raises(CommandRefusedError, match="forbidden"):
         await session.send("cmd_vel", {"vel": 1, "rev": 0})
     with pytest.raises(CommandRefusedError, match="forbidden"):

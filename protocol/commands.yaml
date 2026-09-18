@@ -130,17 +130,33 @@ commands:
     controller: true
     awake: true
     risk: safe
-    status: candidate
-    notes: percent 0 to 99, omitted when 0 in the jtubb fork.
-    source: vendor SDK, jtubb fork
+    status: verified
+    firmware: 3.14.11
+    evidence: fixtures/3.14.11/plan-start-from-dock.jsonl
+    notes: >-
+      Sent by the app on 2026-09-18 as {"id": 1, "percent": 0}, percent included even when 0. There is
+      no data_feedback. On success on_going_planning goes to 2 within a second, to 3 a second later and
+      to 1 once the robot reaches the area; car_controller turns true and plan_feedback starts at once
+      with state 3. On failure the planning code goes to a negative value and nothing else is said: see
+      fixtures/3.14.11/plan-start-fails-route-wp005.jsonl, where -12 is what the app shows as WP005,
+      "Failed to calculate route". The app sent no get_controller; before each start it sent
+      check_map_connectivity {"ids": [area]} and got three empty lists whether or not the start worked.
+      percent values other than 0 have not been seen.
+    source: vendor SDK, jtubb fork; observed from the app
 
   pause:
     payload: {}
     ack: plan_feedback
     controller: true
     risk: safe
-    status: candidate
-    source: bridge headers
+    status: verified
+    firmware: 3.14.11
+    evidence: fixtures/3.14.11/plan-pause-resume-app.jsonl
+    notes: >-
+      Sent by the app on 2026-09-18. Half a second later on_going_planning went 1 to 0 with
+      planning_paused 1 (manual), plan_msg "Goal canceled " for one frame and car_controller false.
+      There is no data_feedback. resume {} brought planning straight back to 1 within a second.
+    source: bridge headers; observed from the app
 
   resume:
     payload: {}
@@ -346,6 +362,11 @@ commands:
       Observed from the phone app on 3.14.11 creating "Pathway 1" (5 vertices) after the area was saved, acked
       state 0. The app sent no get_controller during the session. The stored record gains start_id, end_id and
       connectd_points, which the app does not send.
+      Sent by us on 2026-09-18 with an existing id: it edits the pathway in place and the reply carries the
+      recomputed links. start_id 0 is the dock. The robot links a pathway to the dock only when its first point
+      is close to the charging point: 0.27 m linked, 0.31 m did not, and moving that point onto the charging
+      point turned start_id -1 into 0. Several pathways may hold the dock link. A pathway without it makes
+      every start from the dock fail with on_going_planning -12 (WP005). Still a candidate: one send.
     source: steves2j editor; app capture 2026-09-14
   save_sidewalk:
     payload: {id: int (omit to create), name: str, head_type: 99, range: [{x, y, phi}], ref: {latitude, longitude}, connectids: [], snowPiles: [], trimming_edges: [{id, ref, range}]}
