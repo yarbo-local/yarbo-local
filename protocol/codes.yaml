@@ -8,7 +8,7 @@ StateMSG.on_going_planning:
   1: working            # verb depends on head: mowing, blowing snow, blowing leaves
   2: calculating_route  # seen for about a second after start_plan (2026-09-18)
   3: heading_to_area    # seen: follows 2, lasts until the robot reaches the area
-  5: completed
+  5: completed          # seen only in plan_feedback.state (2026-09-18); the state frame goes 1 -> 0
   11: waypoint_navigation
   12: waypoint_complete
   negative: error       # words live in models.PLAN_ERRORS, only for codes whose app text was seen (-12)

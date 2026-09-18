@@ -294,3 +294,62 @@ def test_recharge_and_barrier_feedback_from_the_wire() -> None:
     assert barriers is not None
     assert barriers.clusters == (((1.0, 2.0), (1.1, 2.0)),)
     assert BarrierPoints.from_wire({"tmp_barrier_points": []}) == BarrierPoints(None, ())
+
+
+# -- 2026-09-18: the first start, pause and completion seen on the wire
+
+START = FIXTURES / "plan-start-from-dock.jsonl"
+FAILED_START = FIXTURES / "plan-start-fails-route-wp005.jsonl"
+PAUSE = FIXTURES / "plan-pause-resume-app.jsonl"
+COMPLETES = FIXTURES / "plan-completes-and-docks.jsonl"
+
+
+def test_a_real_start_is_one_started_event_naming_the_plan() -> None:
+    events, activities = replay(PlanTracker(), START)
+    assert [e.kind for e in events] == [EventKind.STARTED]
+    assert events[0].plan_id == 1
+    assert Activity.CALCULATING_ROUTE in activities
+    assert activities[-1] is Activity.WORKING, "2, then 3, then 1 on reaching the area"
+
+
+def test_a_start_the_robot_cannot_route_is_no_run_at_all() -> None:
+    tracker = PlanTracker()
+    events, _ = replay(tracker, FAILED_START)
+    assert events == []
+    assert tracker.current is None
+
+
+def test_a_pause_from_the_app_is_a_manual_pause_and_a_resume() -> None:
+    tracker = PlanTracker()
+    events, _ = replay(tracker, PAUSE)
+    assert [e.kind for e in events] == [EventKind.PAUSED, EventKind.RESUMED]
+    assert events[0].reason == "manual"
+    assert tracker.current is not None, "the run goes on"
+
+
+def test_the_real_completion_is_completed_once_and_the_trip_home_adds_nothing() -> None:
+    tracker = PlanTracker()
+    events, activities = replay(tracker, COMPLETES)
+    finished = [e for e in events if e.kind is EventKind.FINISHED]
+    assert len(finished) == 1
+    assert finished[0].reason == FinishReason.COMPLETED.value
+    assert finished[0].progress == 100.0
+    assert finished[0].plan_id == 1
+    assert [e.kind for e in events] == [EventKind.FINISHED], (
+        "the 1, 3, 1 between the edge pass and the fill is one run, not a pause or a new start"
+    )
+    assert tracker.current is None
+    assert 1 in tracker.last_completed
+    assert activities[-1] is Activity.CHARGING
+    assert Activity.RETURNING in activities
+
+
+def test_completion_is_taken_from_feedback_even_when_progress_falls_short() -> None:
+    tracker = _running()
+    feedback = PlanFeedback.from_wire(
+        {"planId": 3, "startTime": 99, "state": 5, "totalCleanArea": 100.0, "finishCleanArea": 96.0}
+    )
+    assert feedback is not None
+    events = tracker.on_plan_feedback(feedback, 500.0)
+    assert [e.reason for e in events] == ["completed"]
+    assert tracker.on_state(state_of(on_going_recharging=2), 501.0) == []

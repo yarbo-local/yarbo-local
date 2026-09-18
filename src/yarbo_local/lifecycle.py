@@ -19,9 +19,17 @@ Seen on firmware 3.14.11 (fixtures ``mower-pro-run-faults-estop.jsonl`` and
   1 while ``planning_paused`` still reads 7, and the pause code only clears about 15 s
   after docking.
 
+- A start reports ``on_going_planning`` 2 for a second, then 3, then 1 on reaching the area
+  (fixture ``plan-start-from-dock.jsonl``). A pause from the app sets ``planning_paused`` 1.
+- A completed plan says so in its last ``plan_feedback``: ``state`` 5, every area in
+  ``finishIds``, ``cleanAreaId`` -1, all of the area finished. The state frames never show 5:
+  they go from 1 to 0 with ``on_going_recharging`` already set, because the robot heads home
+  by itself (fixture ``plan-completes-and-docks.jsonl``). Between the edge pass and the fill
+  the code goes 1, 3, 1 within the same run.
+
 Borrowed, not yet seen here (vendor SDK and the jtubb fork):
 
-- ``on_going_planning`` 5 means completed.
+- ``on_going_planning`` 5 in a state frame means completed.
 - A robot that runs low mid-plan returns to charge and resumes by itself. That is told
   apart from an ended run by ``planning_paused`` 2, or by progress below 99 percent.
 - A plan stopped from the app drops to planning 0 with no pause code.
@@ -186,6 +194,10 @@ class PlanTracker:
             progress=feedback.progress if feedback.progress is not None else run.progress,
             duration_s=feedback.duration_s if feedback.duration_s is not None else run.duration_s,
         )
+        if feedback.state in PLANNING_COMPLETED:
+            # Seen on 3.14.11: completion is said here and only here. The 1 Hz state never shows
+            # 5; it goes from working straight to 0 with the robot already on its way home.
+            events.append(self._finish(self.current, FinishReason.COMPLETED, at))
         return events
 
     def on_state(self, state: RobotState, at: float) -> list[LifecycleEvent]:
