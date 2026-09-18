@@ -8,7 +8,7 @@ import contextlib
 from types import TracebackType
 from typing import Any
 
-from .exceptions import ConnectionLostError, PreflightError
+from .exceptions import ConnectionLostError, PlanStartError, PreflightError
 from .models import (
     Feedback,
     GpsReference,
@@ -24,6 +24,9 @@ from .preflight import COMMANDS, Action, check
 from .registry import Registry
 from .session import Session, StateListener
 from .transport import MqttTransport, Transport
+
+# Seen on 3.14.11: a start that works reports route calculation within a second.
+START_CONFIRM_S = 8.0
 
 
 class YarboRobot:
@@ -202,6 +205,23 @@ class YarboRobot:
         """Pause the running plan where it is."""
         await self.act(Action.PAUSE)
 
-    async def start_plan(self, plan_id: int, *, percent: int = 0) -> None:
-        """Start a plan. A robot that cannot says nothing: ``planning_code`` goes negative."""
+    async def start_plan(
+        self, plan_id: int, *, percent: int = 0, confirm_within: float | None = None
+    ) -> None:
+        """Start a plan and wait for the robot's verdict.
+
+        The robot never answers ``start_plan``. One that can start reports route calculation
+        within a second; one that cannot leaves a negative planning code and says nothing
+        else, and since that code may already be there from an earlier failure, only the
+        running codes count as a start. Raises :class:`PlanStartError` otherwise.
+        """
         await self.act(Action.START, plan_id=plan_id, percent=percent)
+        wait = START_CONFIRM_S if confirm_within is None else confirm_within
+        deadline = asyncio.get_running_loop().time() + wait
+        while asyncio.get_running_loop().time() < deadline:
+            if self.state.plan_running:
+                return
+            await asyncio.sleep(0.1)
+        if self.state.plan_running:
+            return
+        raise PlanStartError(plan_id, self.state.plan_error)

@@ -11,7 +11,8 @@ StateMSG.on_going_planning:
   5: completed
   11: waypoint_navigation
   12: waypoint_complete
-  negative: error       # -2 plan history, -10 plan not found, -12 route calc, -20 outside map,
+  negative: error       # words live in models.PLAN_ERRORS, only for codes whose app text was seen (-12)
+                        # -2 plan history, -10 plan not found, -12 route calc, -20 outside map,
                         # -12 seen 2026-09-18 where the app showed WP005 "Failed to calculate route": the
                         # area's pathway was not linked to the dock. The code stays latched until the next start.
                         # -23/-88 no-go zone, -24 low battery, -31 dock exception, -42/-44/-47/-92 boundary

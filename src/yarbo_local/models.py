@@ -76,6 +76,44 @@ class Activity(StrEnum):
 # --- faults
 
 
+# ``StateMSG.on_going_planning`` below zero: why a plan could not start. As with faults, a
+# code gets words only after the app's message for it was seen on a real robot.
+PLAN_ERRORS: dict[int, tuple[str, str, str]] = {
+    -12: (
+        "route_failed",
+        "Failed to calculate route",
+        (
+            "The Yarbo app shows this as WP005. Check that a pathway leads from the dock to the "
+            "area: it must begin on the charging point, within about 30 cm, and end well inside "
+            "the area. Redraw it in the app if in doubt."
+        ),
+    ),
+}
+UNIDENTIFIED_PLAN_ERROR_HINT = (
+    "The robot could not start the plan and gave only a number. The Yarbo app shows the "
+    "reason in words when you start the same plan there."
+)
+
+
+@dataclass(frozen=True, slots=True)
+class PlanError:
+    """A negative ``on_going_planning``. It stays set until the next start, even overnight."""
+
+    code: int
+    key: str | None
+    description: str
+    hint: str
+
+    @classmethod
+    def from_code(cls, code: int) -> PlanError | None:
+        if code >= 0:
+            return None
+        known = PLAN_ERRORS.get(code)
+        if known is None:
+            return cls(code, None, f"Plan error {code}", UNIDENTIFIED_PLAN_ERROR_HINT)
+        return cls(code, *known)
+
+
 @dataclass(frozen=True, slots=True)
 class Fault:
     """A non-zero ``StateMSG.error_code``, with the app's wording when it is known."""
@@ -355,6 +393,11 @@ class RobotState:
         if code == 0:
             return None
         return PAUSE_REASONS.get(code, "unknown")
+
+    @property
+    def plan_error(self) -> PlanError | None:
+        """Why the last start failed, if it did. Not a fault: the robot is fine and at rest."""
+        return PlanError.from_code(self.planning_code)
 
     @property
     def planning_code(self) -> int:

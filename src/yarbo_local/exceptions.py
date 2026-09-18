@@ -52,3 +52,14 @@ class PreflightError(YarboError):
         self.refusals = tuple(refusals)
         reasons = "; ".join(str(getattr(r, "message", r)) for r in self.refusals)
         super().__init__(f"{self.action} refused: {reasons}")
+
+
+class PlanStartError(YarboError):
+    """The robot took ``start_plan`` and then could not start. ``error`` is the
+    :class:`yarbo_local.models.PlanError`, or None when it simply never started."""
+
+    def __init__(self, plan_id: int, error: Any) -> None:
+        self.plan_id = plan_id
+        self.error = error
+        reason = getattr(error, "description", None) or "the robot did not start within the wait"
+        super().__init__(f"plan {plan_id} did not start: {reason}")

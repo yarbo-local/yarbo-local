@@ -7,7 +7,14 @@ from pathlib import Path
 
 import pytest
 
-from yarbo_local import FakeTransport, PreflightError, Registry, Simulator, YarboRobot
+from yarbo_local import (
+    FakeTransport,
+    PlanStartError,
+    PreflightError,
+    Registry,
+    Simulator,
+    YarboRobot,
+)
 from yarbo_local.models import RobotState
 from yarbo_local.preflight import COMMANDS, Action, check
 
@@ -183,15 +190,29 @@ async def test_start_plan_sends_the_id_and_never_the_schema(sim: Simulator) -> N
     await robot.close()
 
 
-async def test_a_start_the_robot_cannot_route_goes_negative_and_says_nothing(
-    sim: Simulator,
-) -> None:
+async def test_a_start_the_robot_cannot_route_is_reported_in_words(sim: Simulator) -> None:
     _ready_to_mow(sim)
+    # As on the real robot, the code from an earlier failure is still there before the start.
+    sim.snapshot["StateMSG"] = {**sim.snapshot["StateMSG"], "on_going_planning": -12}
     robot = await _robot(sim)
     await robot.wake()
     await asyncio.sleep(0.05)
-    await robot.start_plan(999)
-    await asyncio.sleep(0.05)
-    assert robot.state.planning_code == -12, "what the app shows as WP005"
+    with pytest.raises(PlanStartError) as failed:
+        await robot.start_plan(999, confirm_within=0.3)
+    assert failed.value.error is not None
+    assert failed.value.error.key == "route_failed", "what the app shows as WP005"
+    assert "WP005" in failed.value.error.hint
     assert not robot.state.plan_running
     await robot.close()
+
+
+def test_plan_errors_get_words_only_when_the_app_was_seen_saying_them() -> None:
+    assert state_of(on_going_planning=0).plan_error is None
+    assert state_of(on_going_planning=1).plan_error is None
+    known = state_of(on_going_planning=-12).plan_error
+    assert known is not None
+    assert known.description == "Failed to calculate route"
+    unknown = state_of(on_going_planning=-24).plan_error
+    assert unknown is not None
+    assert unknown.key is None
+    assert unknown.description == "Plan error -24", "borrowed meanings are not shown as fact"
