@@ -188,10 +188,12 @@ commands:
     notes: >-
       Sent by us on 2026-09-18, six seconds after our own start_plan, while the robot was heading
       to the area: on_going_planning went 3 to 0 within a second, with no pause code and no
-      data_feedback, exactly as when Stop was pressed in the app in the same phase. Pressed in the
-      app while the robot was mowing, the state first read as a pause (planning_paused 1, plan_msg
-      "Goal canceled ") and cleared four seconds later; see plan-stopped-from-app-effects-only.jsonl,
-      where the app's own publish went through the vendor's cloud and was not seen. The robot stays
+      data_feedback, exactly as when Stop was pressed in the app in the same phase. Sent again while
+      the robot was mowing (fixtures/3.14.11/plan-stop-while-mowing.jsonl): planning 1 to 0 within a
+      second, plan_msg "Goal canceled ", and no pause code at any point. When Stop was pressed in the
+      app while mowing, the state read as a pause first (planning_paused 1) and cleared four seconds
+      later, so the app evidently pauses and then stops; see plan-stopped-from-app-effects-only.jsonl,
+      where the app's own publishes went through the vendor's cloud and were not seen. The robot stays
       where it is; it does not go home. The payload {} comes from the community projects.
     source: bridge headers; sent by us
 

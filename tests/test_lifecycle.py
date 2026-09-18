@@ -379,3 +379,14 @@ def test_our_own_start_then_stop_is_a_run_that_ends_stopped() -> None:
     ]
     assert events[0].plan_id == 2
     assert activities[-1] is Activity.IDLE
+
+
+def test_our_stop_while_mowing_ends_the_run_with_no_pause_in_between() -> None:
+    tracker = PlanTracker()
+    events, activities = replay(tracker, FIXTURES / "plan-stop-while-mowing.jsonl")
+    assert [(e.kind, e.reason) for e in events if e.kind is not EventKind.STARTED] == [
+        (EventKind.FINISHED, "stopped")
+    ]
+    assert Activity.WORKING in activities
+    assert Activity.PAUSED not in activities
+    assert activities[-1] is Activity.IDLE
