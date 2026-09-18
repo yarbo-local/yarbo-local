@@ -41,6 +41,7 @@ from .models import PLANNING_COMPLETED, PLANNING_RUNNING, RobotState
 LOW_BATTERY_PAUSE = 2
 NEARLY_DONE = 99.0
 ANNOUNCE_AFTER = 5.0  # seconds to wait for plan_feedback before reporting a start without it
+CONFIRM_WITHIN = 3.0  # seconds a run heard of through feedback may wait for a state frame
 
 
 class Phase(StrEnum):
@@ -79,6 +80,7 @@ class Run:
     fault_code: int | None = None
     pauses: int = 0
     announced: bool = True  # False while a start waits for plan_feedback to name the plan
+    confirmed: bool = True  # False while a run known only from feedback awaits a state frame
 
 
 @dataclass(frozen=True, slots=True)
@@ -162,7 +164,18 @@ class PlanTracker:
             # Feedback only flows while a plan moves, so a run has begun. Only the very
             # first thing we ever hear can be a run that was already under way.
             adopted = first and not events
-            run = Run(None, None, Phase.RUNNING, at, at, adopted=adopted, announced=adopted)
+            # Feedback comes at 2 Hz and state at 1 Hz, so the state may still say idle for a
+            # moment. Until a frame agrees, that is not evidence the run has stopped.
+            run = Run(
+                None,
+                None,
+                Phase.RUNNING,
+                at,
+                at,
+                adopted=adopted,
+                announced=adopted,
+                confirmed=False,
+            )
         if not run.announced:
             run = replace(run, announced=True)
             events.append(LifecycleEvent(EventKind.STARTED, at, feedback.run_id, feedback.plan_id))
@@ -183,6 +196,10 @@ class PlanTracker:
         if run is None:
             return self._maybe_begin(codes, state, at, adopted=first)
         if run.phase is Phase.RUNNING:
+            if codes.running and not run.confirmed:
+                run = self.current = replace(run, confirmed=True)
+            elif not run.confirmed and at - run.first_seen < CONFIRM_WITHIN:
+                return []
             events = self._from_running(run, codes, state, at)
             if not events and not run.announced and at - run.first_seen > ANNOUNCE_AFTER:
                 self.current = replace(run, announced=True)

@@ -144,6 +144,24 @@ def test_feedback_first_still_reports_one_start() -> None:
     assert tracker.on_state(state_of(on_going_planning=1), 2.0) == []
 
 
+def test_feedback_ahead_of_a_stale_idle_frame_is_not_a_stop() -> None:
+    """Feedback runs at 2 Hz and state at 1 Hz: at a start the state can lag by a frame."""
+    tracker = PlanTracker()
+    tracker.on_state(state_of(on_going_planning=0), 1.0)
+    feedback = PlanFeedback.from_wire({"planId": 7, "startTime": 1000})
+    assert feedback is not None
+    assert [e.kind for e in tracker.on_plan_feedback(feedback, 1.4)] == [EventKind.STARTED]
+    assert tracker.on_state(state_of(on_going_planning=0), 2.0) == [], "one stale frame"
+    assert tracker.on_state(state_of(on_going_planning=1), 3.0) == []
+    assert tracker.current is not None
+    # But feedback that no state frame ever backs up does not hold a run open for ever.
+    lone = PlanTracker()
+    lone.on_state(state_of(on_going_planning=0), 1.0)
+    lone.on_plan_feedback(feedback, 1.4)
+    events = lone.on_state(state_of(on_going_planning=0), 9.0)
+    assert [(e.kind, e.reason) for e in events] == [(EventKind.FINISHED, "stopped")]
+
+
 def test_a_start_without_feedback_is_still_reported() -> None:
     tracker = PlanTracker()
     tracker.on_state(state_of(on_going_planning=0), 1.0)
