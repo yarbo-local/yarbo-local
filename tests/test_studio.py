@@ -143,3 +143,26 @@ async def test_read_only_without_checkout(sim: Simulator) -> None:
         assert "data_destruction" in knowledge["forbidden"]
     await studio.close()
     await robot.close()
+
+
+async def test_observer_lists_our_commands_with_replies_and_saves_one_as_a_fixture(
+    client: TestClient, protocol_dir: Path
+) -> None:
+    r = await client.post("/api/command", json={"name": "read_all_plan"})
+    assert r.status == 200
+    observed = await (await client.get("/api/observer")).json()
+    plan = next(x for x in observed["exchanges"] if x["name"] == "read_all_plan")
+    assert plan["sender"] == "us"
+    assert plan["standing"] == "verified"
+    assert plan["reply"]["state"] == 0
+    assert plan["news"] is False
+
+    r = await client.post(
+        "/api/fixtures", json={"name": "read-all-plan-seen", "seconds": 20, "around": plan["at"]}
+    )
+    assert r.status == 200
+    saved = await r.json()
+    assert saved["records"] >= 2, "the command and its reply at least"
+    assert saved["leaks"]["serial"] == 0
+    text = Path(saved["path"]).read_text()
+    assert "read_all_plan" in text

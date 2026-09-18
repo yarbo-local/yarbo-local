@@ -55,6 +55,7 @@ function fmtValue(v) {
 class StudioApp extends LitElement {
   static properties = {
     tab: { state: true },
+    exchangeTick: { state: true },
     summary: { state: true },
     messages: { state: true },
     diffs: { state: true },
@@ -129,6 +130,7 @@ class StudioApp extends LitElement {
     if (ev.type === "message") this.messages = [ev, ...this.messages].slice(0, 400);
     else if (ev.type === "diff") this.diffs = [ev, ...this.diffs].slice(0, 200);
     else if (ev.type === "connection") this.refresh();
+    else if (ev.type === "exchange") this.exchangeTick = (this.exchangeTick ?? 0) + 1;
   }
 
   render() {
@@ -136,6 +138,7 @@ class StudioApp extends LitElement {
     const tabs = [
       ["stream", "Stream"],
       ["knowledge", "Knowledge"],
+      ["observer", "App observer"],
       ["fixtures", "Fixtures"],
       ["console", "Console"],
     ];
@@ -161,6 +164,8 @@ class StudioApp extends LitElement {
           ? html`<stream-pane .summary=${s} .messages=${this.messages} .diffs=${this.diffs} .paused=${this.paused} @pause=${(e) => (this.paused = e.detail)}></stream-pane>`
           : this.tab === "knowledge"
             ? html`<knowledge-pane .editable=${s?.editable}></knowledge-pane>`
+            : this.tab === "observer"
+              ? html`<observer-pane .editable=${s?.editable} .tick=${this.exchangeTick}></observer-pane>`
             : this.tab === "fixtures"
               ? html`<fixtures-pane .editable=${s?.editable} .ring=${s?.ring}></fixtures-pane>`
               : html`<console-pane></console-pane>`}
@@ -579,7 +584,100 @@ class ConsolePane extends LitElement {
 }
 
 customElements.define("studio-app", StudioApp);
+
+class ObserverPane extends LitElement {
+  static properties = { editable: {}, tick: {}, data: { state: true }, newsOnly: { state: true }, open: { state: true }, result: { state: true } };
+  static styles = [
+    shared,
+    css`
+      :host { display: flex; flex-direction: column; gap: 8px; padding: 10px; height: 100%; box-sizing: border-box; }
+      .bar { display: flex; gap: 14px; align-items: center; }
+      .panel { flex: 1; min-height: 0; }
+      td.payload { max-width: 340px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      tr.news td:first-child { box-shadow: inset 3px 0 0 var(--warn, #d9a441); }
+      tr.row { cursor: pointer; }
+      tr.detail td { background: var(--panel-2); white-space: pre-wrap; word-break: break-word; }
+      .tag.verified { color: var(--ok, #5fb878); }
+      .tag.unknown, .tag.candidate { color: var(--warn, #d9a441); }
+      .tag.forbidden { color: var(--bad, #e06c75); }
+    `,
+  ];
+
+  constructor() {
+    super();
+    this.data = { exchanges: [], streams: {} };
+    this.newsOnly = false;
+    this.open = null;
+    this.result = "";
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this.load();
+  }
+
+  updated(changed) {
+    if (changed.has("tick")) this.load();
+  }
+
+  async load() {
+    try {
+      this.data = await api.get("/api/observer");
+    } catch (err) {
+      this.result = String(err.message ?? err);
+    }
+  }
+
+  effects(x) {
+    return x.effects.map((e) => Object.entries(e).filter(([k]) => k !== "after_ms").map(([k, [a, b]]) => `${k.split(".").pop()} ${fmtValue(a)} \u2192 ${fmtValue(b)}`).join(", ")).join("; ");
+  }
+
+  async save(x) {
+    const name = prompt("Fixture name", `${x.name}-from-app`);
+    if (!name) return;
+    try {
+      const r = await api.post("/api/fixtures", { name, seconds: 20, around: x.at });
+      this.result = `saved ${r.records} records to ${r.path}` + (r.leaks.serial ? ` - ${r.leaks.serial} serial leaks, do not commit` : "");
+    } catch (err) {
+      this.result = String(err.message ?? err);
+    }
+  }
+
+  render() {
+    const rows = [...this.data.exchanges].reverse().filter((x) => !this.newsOnly || x.news);
+    const streams = Object.entries(this.data.streams).map(([k, n]) => `${k} x${n}`).join(", ");
+    return html`
+      <div class="bar">
+        <span>Use the Yarbo app; each command it sends appears here with the robot's reply and what changed.</span>
+        <label><input type="checkbox" .checked=${this.newsOnly} @change=${(e) => (this.newsOnly = e.target.checked)} /> only what the registry has not verified</label>
+        <span class="muted">${streams ? "streams not listed: " + streams : ""}</span>
+      </div>
+      <div class="muted">${this.result}</div>
+      <div class="panel">
+        <table>
+          <thead><tr><th>time</th><th>from</th><th>command</th><th>registry</th><th>payload</th><th>reply</th><th>what changed after</th><th></th></tr></thead>
+          <tbody>
+            ${rows.map((x) => html`
+              <tr class=${classMap({ row: true, news: x.news })} @click=${() => (this.open = this.open === x.at ? null : x.at)}>
+                <td>${fmtTime(x.at)}</td>
+                <td>${x.sender}</td>
+                <td>${x.name}${x.repeats > 1 ? html` <span class="muted">x${x.repeats}</span>` : ""}</td>
+                <td><span class="tag ${x.standing}">${x.standing}</span>${x.new_keys.length ? html` <span class="tag unknown">new keys: ${x.new_keys.join(", ")}</span>` : ""}</td>
+                <td class="payload">${JSON.stringify(x.payload)}</td>
+                <td>${x.reply ? html`state ${x.reply.state} <span class="muted">${x.reply.latency_ms} ms</span> ${x.reply.msg ?? ""}` : html`<span class="muted">none</span>`}</td>
+                <td>${this.effects(x)}</td>
+                <td>${this.editable ? html`<button @click=${(e) => { e.stopPropagation(); this.save(x); }}>Save fixture</button>` : ""}</td>
+              </tr>
+              ${this.open === x.at ? html`<tr class="detail"><td colspan="8">${JSON.stringify({ payload: x.payload, reply: x.reply, effects: x.effects }, null, 2)}</td></tr>` : ""}`)}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+}
+
 customElements.define("stream-pane", StreamPane);
+customElements.define("observer-pane", ObserverPane);
 customElements.define("knowledge-pane", KnowledgePane);
 customElements.define("fixtures-pane", FixturesPane);
 customElements.define("console-pane", ConsolePane);

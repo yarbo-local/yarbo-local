@@ -28,6 +28,7 @@ from .. import codec, fieldmap
 from ..capture import build_record
 from ..client import YarboRobot
 from ..exceptions import YarboError
+from ..observer import AppObserver
 from ..redact import redactor_for_salt
 from ..registry import data_path
 from ..session import MessageEvent
@@ -35,6 +36,7 @@ from ..session import MessageEvent
 _LOGGER = logging.getLogger(__name__)
 STATIC = Path(__file__).parent / "static"
 RING_SIZE = 20000
+FIXTURE_LEAD_S = 5.0  # seconds kept before an observed command, so the change can be read
 CLIENT_QUEUE = 1000
 
 
@@ -72,6 +74,7 @@ class Studio:
         self.seen_paths: dict[str, dict[str, Any]] = {}
         self.clients: dict[web.WebSocketResponse, asyncio.Queue[str]] = {}
         self._last_frame: dict[str, Any] = {}
+        self.observer = AppObserver(robot.session.registry)
         self._unsubscribe = [
             robot.session.add_message_listener(self._on_message),
             robot.session.add_connection_listener(self._on_connection),
@@ -87,6 +90,9 @@ class Studio:
 
     def _on_message(self, ev: MessageEvent) -> None:
         self.ring.append((ev.at, ev.topic, ev.raw))
+        exchange = self.observer.on_message(ev)
+        if exchange is not None:
+            self._broadcast({"type": "exchange", **exchange.to_dict()})
         stat = self.topics.setdefault(ev.topic, TopicStat())
         stat.count += 1
         stat.last_at = ev.at
@@ -259,7 +265,13 @@ class Studio:
             )
         return out
 
-    def save_fixture(self, name: str, seconds: float) -> dict[str, Any]:
+    def observed(self) -> dict[str, Any]:
+        """What the app (and we) asked, the replies, and the state changes that followed."""
+        return {"exchanges": self.observer.to_list(), "streams": dict(self.observer.streams)}
+
+    def save_fixture(
+        self, name: str, seconds: float, *, around: float | None = None
+    ) -> dict[str, Any]:
         protocol_dir = self._require_checkout()
         safe = "".join(ch if ch.isalnum() or ch in "-_" else "-" for ch in name.strip()).strip("-")
         if not safe:
@@ -267,12 +279,14 @@ class Studio:
         firmware = self.robot.state.firmware or "unknown"
         target = protocol_dir / "fixtures" / firmware / f"{safe}.jsonl"
         target.parent.mkdir(parents=True, exist_ok=True)
-        cutoff = time.time() - seconds
+        # ``around`` saves one observed exchange: a few seconds before it, ``seconds`` after.
+        cutoff = time.time() - seconds if around is None else around - FIXTURE_LEAD_S
+        until = None if around is None else around + seconds
         redactor = redactor_for_salt(None)
         real_serial = self.robot.serial or ""
         lines: list[str] = []
         for at, topic, raw in self.ring:
-            if at < cutoff:
+            if at < cutoff or (until is not None and at > until):
                 continue
             rec = build_record(topic, raw, redactor, at=at)
             lines.append(json.dumps(rec, separators=(",", ":")))
@@ -312,6 +326,7 @@ class Studio:
         app.router.add_get("/api/summary", self._json(lambda _r: self.summary()))
         app.router.add_get("/api/knowledge", self._json(lambda _r: self.knowledge()))
         app.router.add_get("/api/diff", self._json(lambda _r: self.diff()))
+        app.router.add_get("/api/observer", self._json(lambda _r: self.observed()))
         app.router.add_get("/api/fixtures", self._json(lambda _r: self.list_fixtures()))
         app.router.add_post("/api/fixtures", self._fixtures_post)
         app.router.add_post("/api/fields", self._fields_post)
@@ -336,7 +351,12 @@ class Studio:
     async def _fixtures_post(self, request: web.Request) -> web.Response:
         body = await request.json()
         try:
-            result = self.save_fixture(str(body.get("name", "")), float(body.get("seconds", 60)))
+            around = body.get("around")
+            result = self.save_fixture(
+                str(body.get("name", "")),
+                float(body.get("seconds", 60)),
+                around=float(around) if around is not None else None,
+            )
         except (ValueError, OSError) as err:
             return self._error(400, str(err))
         return web.json_response(result)
