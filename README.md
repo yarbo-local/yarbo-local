@@ -102,6 +102,10 @@ Nobody on the project does. One command tells us what we cannot find out ourselv
 
 Read `protocol/README.md`. A command becomes `verified` only with a fixture showing the request and the reply on real hardware, with the firmware version recorded. Pull requests that add knowledge without evidence are asked for a capture.
 
+## Releasing
+
+Releases are published to PyPI by GitHub Actions through trusted publishing, with a manual approval and no token anywhere. See `docs/releasing.md`.
+
 ## License and trademark
 
 MIT. Protocol facts were assembled from the vendor's MIT-licensed SDK, from `python-yarbo`, `home-assistant-yarbo`, the `jtubb` and `briangann` forks of the vendor integration, and the `steves2j` map editor; see `protocol/commands.yaml` for per-entry sources. Yarbo is a trademark of its owner. This project is not affiliated with, endorsed by, or supported by Yarbo.

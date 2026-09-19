@@ -1,0 +1,61 @@
+name: Release
+
+# Publishes to PyPI when a version tag is pushed (v0.1.0, v0.1.0.dev0, ...).
+# No token anywhere: PyPI trusts this workflow in this repository through OpenID Connect
+# ("trusted publishing"). The publisher is registered once on pypi.org with:
+#   owner yarbo-local, repository yarbo-local, workflow release.yml, environment pypi.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+      - name: The tag must be the version in pyproject.toml
+        run: |
+          version="$(uv run --no-project python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")"
+          if [ "v${version}" != "${GITHUB_REF_NAME}" ]; then
+            echo "::error::tag ${GITHUB_REF_NAME} does not match version ${version}"; exit 1
+          fi
+      - name: Tests
+        run: |
+          uv sync --extra dev
+          uv run pytest -q
+      - name: Build
+        run: uv build
+      - name: The wheel must work on its own
+        run: |
+          uv venv --python 3.13 /tmp/wheeltest
+          uv pip install --python /tmp/wheeltest/bin/python dist/*.whl
+          /tmp/wheeltest/bin/python -c "from yarbo_local import Registry; r = Registry.default(); assert r.verified, 'registry data missing from the wheel'"
+          /tmp/wheeltest/bin/yarbo-local --version
+      - name: Metadata
+        run: uvx twine check --strict dist/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/yarbo-local/
+    permissions:
+      id-token: write  # the only permission trusted publishing needs
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
