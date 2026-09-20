@@ -16,8 +16,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
         with:
           python-version: "3.13"
       - name: The tag must be the version in pyproject.toml
@@ -40,7 +40,7 @@ jobs:
           /tmp/wheeltest/bin/yarbo-local --version
       - name: Metadata
         run: uvx twine check --strict dist/*
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/
@@ -54,7 +54,7 @@ jobs:
     permissions:
       id-token: write  # the only permission trusted publishing needs
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist/
