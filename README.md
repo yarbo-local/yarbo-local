@@ -2,7 +2,7 @@
 
 Local-first tooling and, later, the asyncio library behind a Home Assistant integration for Yarbo robots. It talks to the anonymous MQTT broker the robot runs on your LAN and to nothing else. No Yarbo account, no vendor servers, no telemetry.
 
-Status: **pre-alpha.** Phase 0 validated the protocol on real hardware (firmware 3.14.11) and produced the knowledge base in `protocol/`: 23 commands verified with captures, the rest marked as candidates that cannot be sent. The library core is in place: a registry-gated session, typed state, the map, plan control (start, pause, resume, stop, return to dock, each verified against the robot), a fixture-driven simulator and a small client. It is on PyPI as `yarbo-local`. The Home Assistant integration ([yarbo-local-ha](https://github.com/yarbo-local/yarbo-local-ha)) shows and controls the robot, and carries its own map card, which draws the map, the robot and plan progress.
+Status: **pre-alpha.** Phase 0 validated the protocol on real hardware (firmware 3.14.11) and produced the knowledge base in `protocol/`: 55 commands verified with captures, the rest marked as candidates that cannot be sent. The library core is in place: a registry-gated session, typed state, the map, plan control (start, pause, resume, stop, return to dock), the map and its objects, plans and schedules, and the robot's settings, each verified against the robot, a fixture-driven simulator and a small client. It is on PyPI as `yarbo-local`. The Home Assistant integration ([yarbo-local-ha](https://github.com/yarbo-local/yarbo-local-ha)) shows and controls the robot, and carries its own map card, which draws the map, the robot and plan progress.
 
 ## What is here
 
