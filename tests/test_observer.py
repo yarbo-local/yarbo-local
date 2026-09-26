@@ -71,14 +71,15 @@ def test_a_start_shows_what_we_know_and_what_is_news() -> None:
     assert any("StateMSG.on_going_planning" in effect for effect in start.effects)
 
     check = named(observer, "check_map_connectivity")
-    assert check.standing == "candidate", "registered from the 2026-09-26 app capture"
+    assert check.standing == "verified", "verified on the robot on 2026-09-26"
     assert check.reply is not None
     assert check.reply["state"] == 0
     assert check.reply["data"] == {"disconnected": [], "invalid": [], "normal": []}
 
+    # Every command the app sent in this session has been verified since (2026-09-26),
+    # so the session holds nothing new.
     news = {e["name"] for e in observer.to_list(news_only=True)}
-    assert "read_mower_area_params" in news
-    assert "start_plan" not in news
+    assert news == set()
 
 
 def test_a_failed_start_has_no_reply_and_a_negative_code_as_its_effect() -> None:

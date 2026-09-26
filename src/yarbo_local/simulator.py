@@ -245,6 +245,13 @@ class Simulator:
         if isinstance(value, dict) and value.get("cmd") == 2:
             self._set_state(on_going_planning=0, on_going_recharging=1, error_code=0)
 
+    def cmd_mower_head_sensor_switch(self, value: Any) -> None:
+        """As seen on 3.14.11: state -99 queries, and the answer carries state 33."""
+        if isinstance(value, dict) and value.get("state") == -99:
+            self._feedback(
+                "mower_head_sensor_switch", 33, "Mower sensor switch status query feedback.", ""
+            )
+
     def cmd_read_all_plan(self, value: Any) -> None:
         self._feedback("read_all_plan", 0, "", {"data": list(self.plans)})
 

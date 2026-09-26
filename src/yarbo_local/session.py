@@ -370,7 +370,7 @@ class Session:
             except ReplyTimeoutError:
                 self._guess_zlib = not self._guess_zlib
                 raise
-        if not fb.ok:
+        if fb.state not in cmd.ok_states:
             raise CommandError(name, fb.state, fb.msg)
         if name == "get_device_msg" and isinstance(fb.payload, dict):
             # The snapshot is authoritative; fold it into the state for every caller.

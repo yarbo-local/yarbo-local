@@ -95,6 +95,22 @@ async def test_error_state_raises(sim: Simulator, transport: FakeTransport) -> N
     await asyncio.wait_for(task, 1.0)
 
 
+async def test_a_query_whose_success_is_state_33(sim: Simulator, transport: FakeTransport) -> None:
+    """mower_head_sensor_switch answers a query with state 33; the registry says that is success."""
+    session = Session(transport, serial=sim.serial)
+    task = await _running(session)
+    sim.tick()
+    await session.wait_ready(1.0)
+    fb = await session.request(
+        "mower_head_sensor_switch", {"state": -99}, timeout=1.0, confirmed=True
+    )
+    assert fb.state == 33
+    assert not fb.ok  # the envelope's own rule stays: only 0 is plain success
+    session.stop()
+    transport.drop()
+    await asyncio.wait_for(task, 1.0)
+
+
 async def test_verified_read_passes_rules(sim: Simulator, transport: FakeTransport) -> None:
     session = Session(transport, serial=sim.serial)
     task = await _running(session)

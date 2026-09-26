@@ -61,6 +61,7 @@ class Command:
     firmware: str | None
     notes: str
     source: str
+    ok_states: tuple[int, ...] = (0,)  # reply states that mean success; a query may answer 33
 
     @property
     def verified(self) -> bool:
@@ -121,6 +122,7 @@ class Registry:
                 firmware=str(entry["firmware"]) if entry.get("firmware") else None,
                 notes=str(entry.get("notes", "") or entry.get("verified_notes", "")),
                 source=str(entry.get("source", "")),
+                ok_states=tuple(int(v) for v in entry.get("ok_states", (0,))),
             )
         forbidden = {
             group: [str(n).split(" ")[0] for n in names]

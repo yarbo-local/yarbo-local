@@ -219,6 +219,9 @@ commands:
     risk: safe
     status: candidate
     source: python-yarbo
+    tried_notes: >
+      2026-09-26: sent (state 1 then 0) without error; nothing in the robot's reports changed. Needs someone to
+      listen.
 
   song_cmd:
     payload: {song_name: find yarbo}
@@ -227,6 +230,8 @@ commands:
     risk: safe
     status: candidate
     source: vendor SDK
+    tried_notes: >
+      2026-09-26: sent without error; nothing in the robot's reports changed. Needs someone to listen.
 
   light_ctrl:
     payload: {led_head: 0-255, led_left_w: 0-255, led_right_w: 0-255, body_left_r: 0-255, body_right_r: 0-255, tail_left_r: 0-255, tail_right_r: 0-255}
@@ -235,13 +240,20 @@ commands:
     risk: safe
     status: candidate
     source: python-yarbo, vendor SDK (sends led_head only)
+    tried_notes: >
+      2026-09-26: no reply and LedInfoMSG did not change. The robot drives its body and tail LEDs from its status
+      (StateMSG.en_state_led true); they went off when charging started. Needs someone to look.
 
   set_sound_param:
     payload: {enable: bool, vol: 0.0-1.0, mode: 0}
     ack: data_feedback
     controller: true
     risk: safe
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-settings-toggles.jsonl
+    verified_notes: >
+      vol is 0.0-1.0: 0.5 read back as StateMSG.volume 0.5. enable drives StateMSG.enable_sound. mode 0.
     notes: vol scale disputed (0-1 in vendor SDK, 0-100 in bridge example). Phase 0 question.
     source: vendor SDK
 
@@ -250,7 +262,12 @@ commands:
     ack: data_feedback
     controller: true
     risk: safe
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-settings-toggles.jsonl
+    verified_notes: >
+      StateMSG.person_detect_status follows, 0 or 1, within 4 s. The msg says 'Person detection enabled
+      successfully.' for both values.
     source: vendor SDK
 
   set_child_lock:
@@ -258,15 +275,24 @@ commands:
     ack: data_feedback
     controller: true
     risk: safe
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-settings-toggles.jsonl
+    verified_notes: >
+      StateMSG.child_lock_status follows; msg 'set_child_lock success: enabled' or 'disabled'.
     source: vendor SDK
 
   set_follow_state:
     payload: {state: 0|1}
-    ack: data_feedback
+    ack: none
     controller: true
     risk: safe
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-follow-head-charging.jsonl
+    verified_notes: >
+      No reply on data_feedback. StateMSG.robot_follow_state follows within 4 s. With the Mower Pro head, on the
+      dock, nothing moved.
     source: vendor SDK
 
   save_global_params:
@@ -274,7 +300,12 @@ commands:
     ack: data_feedback
     controller: true
     risk: confirm
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-settings-saves.jsonl
+    verified_notes: >
+      Send a whole record (the app's 56 keys). Unchanged, it answers 'No changes detected, parameters unchanged.'; a
+      change is stored (recharge_battery 25 back to 20).
     source: vendor SDK
     observed: fixtures/3.14.11/app-plan-schedule-settings-rain.jsonl
     notes: >
@@ -291,6 +322,9 @@ commands:
     risk: safe
     status: candidate
     source: vendor SDK
+    tried_notes: >
+      2026-09-26: acked for 1 and 0 (msg 'Obstacle detection has been successfully set up'); no StateMSG field
+      changed, so the effect is not established.
 
   mower_target_cmd:
     payload: {target: mm}
@@ -298,7 +332,12 @@ commands:
     controller: true
     heads: [3, 5]
     risk: safe
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-follow-head-charging.jsonl
+    verified_notes: >
+      No reply. mower_head_info01.lift_motor_place moves to the target: 50 to 70 in 7 s, 70 to 50 in 5 s,
+      lift_motor_run_status 1 while moving.
     source: vendor SDK
 
   mower_speed_cmd:
@@ -309,6 +348,9 @@ commands:
     risk: safe
     status: candidate
     source: vendor SDK
+    tried_notes: >
+      2026-09-26: no reply; on the dock, outside a plan, the blade motors stayed at 0 for state 30. Probably refused
+      outside a run.
 
   cmd_set_chute_angle:
     payload: {cmd: degrees}
@@ -318,6 +360,8 @@ commands:
     risk: safe
     status: candidate
     source: vendor SDK
+    tried_notes: >
+      Needs the snow blower head; not tried with the Mower Pro.
 
   read_all_nogozone:
     payload: {}
@@ -369,7 +413,12 @@ commands:
     ack: data_feedback
     controller: true
     risk: confirm
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-map-objects.jsonl
+    verified_notes: >
+      Omit id to create: the robot assigns it from a counter shared with pathways and sidewalks, and the stored
+      record adds area_id. With id it edits in place (enable false stored).
     notes: Full record every time; omit id to create. First vertex repeated to close the polygon.
     source: steves2j editor, jtubb fork
   save_pathway:
@@ -377,7 +426,12 @@ commands:
     ack: data_feedback
     controller: unknown
     risk: confirm
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-map-objects.jsonl
+    verified_notes: >
+      Omit id to create; the id comes from the shared counter and the robot computes start_id and end_id: a pathway
+      inside an area links to that area at both ends. With id it edits in place (2026-09-18).
     observed: fixtures/3.14.11/mapping-area-app.jsonl
     notes: >
       Observed from the phone app on 3.14.11 creating "Pathway 1" (5 vertices) after the area was saved, acked
@@ -394,14 +448,23 @@ commands:
     ack: data_feedback
     controller: true
     risk: confirm
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-map-objects.jsonl
+    verified_notes: >
+      Omit id to create; the stored record adds start_id, end_id, connectd_points, tow_length and tow_width.
     source: steves2j editor
   save_clean_area:
     payload: {id: int (omit to create), name: str, algorithm_type: int, labels: [int], range: [{x, y, phi}], ref: {latitude, longitude}, push_snow_dir: float, slope_degrees: float, leaf_piles: [], snowPiles: [], trimming_edges: []}
     ack: data_feedback
     controller: unknown
     risk: confirm
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-area-patterns.jsonl
+    verified_notes: >
+      With id it edits the area in place; the reply is the stored 18-key record. algorithm_type 0 is rows and 1 a
+      contour spiral; 2, 3 and 5 previewed identical to 0; 4 is rows with fewer turns (East Lawn).
     observed: fixtures/3.14.11/mapping-area-app.jsonl
     notes: >
       Observed from the phone app creating "Area 1" (25 vertices, 126 m2): first without id or labels, then
@@ -430,7 +493,11 @@ commands:
     ack: data_feedback
     controller: unknown
     risk: confirm
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-settings-saves.jsonl
+    verified_notes: >
+      The whole 9-key record from read_area_params, stored exactly; msg 'Area settings saved successfully.'.
     observed: fixtures/3.14.11/mapping-area-app.jsonl
     notes: Snow-blower settings for an area, written by the app when the area is created. Acked state 0.
     source: app capture 2026-09-14
@@ -453,7 +520,11 @@ commands:
     ack: data_feedback
     controller: unknown
     risk: confirm
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-settings-saves.jsonl
+    verified_notes: >
+      The whole 11-key record from read_pathway_params, stored exactly.
     observed: fixtures/3.14.11/mapping-area-app.jsonl
     source: app capture 2026-09-14
   read_all_plan_history:
@@ -461,7 +532,12 @@ commands:
     ack: data_feedback
     controller: false
     risk: safe
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-reads.jsonl
+    verified_notes: >
+      Reply data {data: [one record per finished run]}: times, battery per work segment, areas, progress, planned
+      path and head settings. No obstacles.
     notes: >
       Run history. Sent once on 3.14.11 (2026-09-15): state 0, {data: [one record per finished run]} with
       times and battery per work segment, areas, progress, planned path and head settings; no obstacles.
@@ -472,21 +548,33 @@ commands:
     ack: data_feedback
     controller: true
     risk: confirm
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-map-objects.jsonl
+    verified_notes: >
+      msg 'NoGoZone deleted successfully.'.
     source: bridge headers
   del_pathway:
     payload: {id: int}
     ack: data_feedback
     controller: true
     risk: confirm
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-map-objects.jsonl
+    verified_notes: >
+      msg 'Pathway deleted successfully.'.
     source: bridge headers
   del_sidewalk:
     payload: {id: int}
     ack: data_feedback
     controller: true
     risk: confirm
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-map-objects.jsonl
+    verified_notes: >
+      state 0, empty msg.
     source: bridge headers
 
   emergency_stop_active:
@@ -496,6 +584,9 @@ commands:
     risk: confirm
     status: candidate
     source: python-yarbo
+    tried_notes: >
+      2026-09-26: no visible change while idle on the dock (already paused 9). The app's stop during a run showed
+      planning_paused 4 (2026-09-15). Needs a run.
   emergency_unlock:
     payload: {confirm: 1}
     ack: none
@@ -506,6 +597,8 @@ commands:
       The app sent confirm 1 after an emergency stop on 2026-09-15, with push_rod_cmd state 0
       just before it.
     source: python-yarbo; payload observed from the app
+    tried_notes: >
+      2026-09-26: no visible change while idle on the dock. Needs a run with an emergency stop.
   shutdown:
     payload: {}
     ack: data_feedback
@@ -513,12 +606,20 @@ commands:
     risk: confirm
     status: candidate
     source: bridge headers
+    tried_notes: >
+      Not tried: afterwards someone has to switch the robot back on.
   restart_container:
     payload: {}
     ack: data_feedback
     controller: true
     risk: confirm
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-restart-container.jsonl
+    verified_notes: >
+      msg 'Container restarted successfully.'. The robot and its broker went silent at once and answered again 120 s
+      later with settings kept. It cleared a rain hold (paused 9); charging did not resume by itself
+      (wireless_charging_cmd cmd 1 restarted it).
     source: bridge headers
 
   read_global_params:
@@ -561,7 +662,12 @@ commands:
     ack: data_feedback
     controller: unknown
     risk: confirm
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-settings-saves.jsonl
+    verified_notes: >
+      The whole dock record, stored exactly, pathway links unchanged. The firmware recomputes startPoint 1.0 m along
+      straightPhi (2026-09-18).
     notes: >-
       Never seen on the wire. The name follows the community's save_X verb pattern and the payload is
       the stored dock record as read_recharge_point returns it. In the one record seen, startPoint is
@@ -580,7 +686,12 @@ commands:
     ack: data_feedback
     controller: unknown
     risk: safe
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-reads.jsonl
+    verified_notes: >
+      Returns the plan's route without moving the robot, shaped like plan_feedback: cleanPathProgress type 0 is the
+      fill, type 1 the edge lap; totalTime is the estimate.
     notes: >-
       The route a plan would take, computed by the robot without moving. Payload as steves2j sends it,
       id and percent.
@@ -591,7 +702,11 @@ commands:
     ack: data_feedback
     controller: false
     risk: safe
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-reads.jsonl
+    verified_notes: >
+      Reply is the area's 33-key mowing record, msg 'Mower area settings loaded successfully.'.
     observed: fixtures/3.14.11/plan-start-from-dock.jsonl
     notes: >-
       Sent by the app on 2026-09-18 before and after a start; state 0, msg "Mower area settings loaded
@@ -605,7 +720,12 @@ commands:
     ack: data_feedback
     controller: unknown
     risk: confirm
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-settings-saves.jsonl
+    verified_notes: >
+      Send the whole record: the app's 31 keys plus mapping_module_type 99. Re-saved unchanged and stored exactly;
+      edits stored (2026-09-18).
     observed: fixtures/3.14.11/plan-start-from-dock.jsonl
     notes: >-
       Sent by the app on 2026-09-18 with 31 keys, acked state 0 with empty data. The mowing settings of
@@ -630,7 +750,11 @@ commands:
     ack: data_feedback
     controller: unknown
     risk: confirm
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-plans-schedules.jsonl
+    verified_notes: >
+      Without id the robot creates the plan and assigns the next id; with id it edits name and areaIds in place.
     observed: fixtures/3.14.11/app-plan-schedule-settings-rain.jsonl
     source: app capture
     notes: >
@@ -643,7 +767,11 @@ commands:
     ack: data_feedback
     controller: unknown
     risk: confirm
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-plans-schedules.jsonl
+    verified_notes: >
+      read_all_plan then lists the plans in that order.
     observed: fixtures/3.14.11/app-plan-schedule-settings-rain.jsonl
     source: app capture
     notes: >
@@ -655,7 +783,11 @@ commands:
     ack: data_feedback
     controller: unknown
     risk: confirm
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-plans-schedules.jsonl
+    verified_notes: >
+      Deletes the plan and its schedules.
     observed: fixtures/3.14.11/app-plan-schedule-settings-rain.jsonl
     source: app capture
     notes: >
@@ -668,7 +800,12 @@ commands:
     ack: data_feedback
     controller: unknown
     risk: confirm
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-plans-schedules.jsonl
+    verified_notes: >
+      A disabled schedule is stored as sent: times verbatim, timezone empty. Firing, week_day and schedule_type
+      meanings not tested.
     observed: fixtures/3.14.11/app-plan-schedule-settings-rain.jsonl
     source: app capture
     notes: >
@@ -677,6 +814,34 @@ commands:
       echoes the record and adds interval_time 0, times 0, timezone "", is_weather_schedule 0 and
       completed_this_window false. Meanings of schedule_type, week_day, return_method, and whether the times are
       local or UTC, are not known yet; the end time earlier than the start time suggests a conversion.
+
+  del_schedule:
+    payload: {id: int}
+    ack: data_feedback
+    controller: unknown
+    risk: confirm
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-plans-schedules.jsonl
+    verified_notes: >
+      The guessed name is right: msg 'Schedule deleted successfully.'.
+    source: guess from the del_plan / del_pathway naming, 2026-09-26
+    notes: Registered before the first try. The app has not been seen deleting a schedule on its own.
+
+  wireless_charging_cmd:
+    payload: {cmd: int}
+    ack: none
+    controller: unknown
+    risk: confirm
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-charging-resume.jsonl
+    verified_notes: >
+      No reply. cmd 1 on the dock starts charging: StateMSG.charging_status 6 or 0 to 1 to 2, BatteryMSG.status 1 to
+      3, BodyMsg.recharge_state 0 to 2, wireless_recharge.state 0 to 2.
+    observed: fixtures/3.14.11/plan-completes-and-docks.jsonl
+    source: app capture 2026-09-18 (cmd 1, sent during the East Lawn run)
+    notes: Registered before the first try by us.
 
   smart_vision_control:
     payload: {state: "0|1"}
@@ -690,6 +855,8 @@ commands:
       Sent twice, state 1 then 0, when the owner toggled a vision setting in the app while asked to toggle person
       detection. Replies state 0, msg "Smart vision control command sent: 1" and ": 0". StateMSG person detection
       did not change in the capture, so what it switches is not established.
+    tried_notes: >
+      2026-09-26: acked when sent by us too; nothing in DeviceMSG changed.
 
   clear_plan_state:
     payload: {state: int}
@@ -702,13 +869,20 @@ commands:
     notes: >
       The app sent state 9 eleven seconds after a start was held for rain (planning_paused 9). No reply came and
       the robot stayed paused 9. The value matches the pause code; it looks like an acknowledgement.
+    tried_notes: >
+      2026-09-26: sent by us while it was still raining; the robot stayed paused 9.
 
   check_map_connectivity:
     payload: {ids: [int]}
     ack: data_feedback
     controller: false
     risk: safe
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-reads.jsonl
+    verified_notes: >
+      Reply {disconnected, invalid, normal}; all three empty for areas 1, 4 and 9 with their pathways linked to the
+      dock.
     observed: fixtures/3.14.11/app-plan-schedule-settings-rain.jsonl
     source: app capture
     notes: >
@@ -720,7 +894,11 @@ commands:
     ack: data_feedback
     controller: false
     risk: safe
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-reads.jsonl
+    verified_notes: >
+      Reply data [] (no period set).
     observed: fixtures/3.14.11/app-plan-schedule-settings-rain.jsonl
     source: app capture
     notes: Reply state 0, data []. By its name, times when the robot must not charge; none are set here.
@@ -730,7 +908,11 @@ commands:
     ack: data_feedback
     controller: false
     risk: safe
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-reads.jsonl
+    verified_notes: >
+      Per-area name, area in square metres, area_max_low_cfd_dis and path_max_low_cfd_dis, plus the global limits.
     observed: fixtures/3.14.11/app-plan-schedule-settings-rain.jsonl
     source: app capture
     notes: >
@@ -740,10 +922,16 @@ commands:
 
   mower_head_sensor_switch:
     payload: {state: int}
+    ok_states: [0, 33]
     ack: data_feedback
     controller: unknown
     risk: confirm
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-reads.jsonl
+    verified_notes: >
+      state -99 is a query. Its normal reply has state 33, msg 'Mower sensor switch status query feedback.', so
+      session.request raises CommandError for it. Setting values not tried.
     observed: fixtures/3.14.11/app-plan-schedule-settings-rain.jsonl
     source: app capture
     notes: >
@@ -756,7 +944,11 @@ commands:
     ack: data_feedback
     controller: false
     risk: safe
-    status: candidate
+    status: verified
+    firmware: "3.14.11"
+    evidence: fixtures/3.14.11/verify-reads.jsonl
+    verified_notes: >
+      Reply {enable, move_speed}.
     observed: fixtures/3.14.11/app-plan-schedule-settings-rain.jsonl
     source: app capture
     notes: Reply state 0, data enable false, move_speed 0.4. Towing mode settings.

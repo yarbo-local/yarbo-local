@@ -91,6 +91,10 @@ def build_record(
     }
 
 
+RECONNECT_MIN_S = 2.0
+RECONNECT_MAX_S = 30.0
+
+
 async def sniff(
     host: str,
     port: int = 1883,
@@ -111,6 +115,21 @@ async def sniff(
     identifier = f"yarbo-local-sniff-{secrets.token_hex(3)}"
 
     async def _run() -> None:
+        # The broker lives on the robot, so it goes away whenever the robot restarts
+        # (restart_container took it away for two minutes). Keep reconnecting, so a
+        # long capture survives that; the gap shows in the timestamps.
+        delay = RECONNECT_MIN_S
+        while True:
+            try:
+                await _connect_once()
+            except aiomqtt.MqttError as err:
+                print(f"disconnected ({err}); reconnecting in {delay:.0f} s", file=log)
+                await asyncio.sleep(delay)
+                delay = min(delay * 2, RECONNECT_MAX_S)
+            else:
+                return
+
+    async def _connect_once() -> None:
         async with aiomqtt.Client(host, port=port, identifier=identifier) as client:
             await client.subscribe(sub)
             print(f"connected to {host}:{port}, subscribed {sub}", file=log)
