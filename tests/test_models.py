@@ -75,9 +75,31 @@ def test_activity_derivation() -> None:
     base, _ = RobotState().with_frame(_snapshot(), 1.0)
     asleep, _ = base.with_heartbeat(Heartbeat(0), 2.0)
     assert asleep.activity is Activity.SLEEPING
-    charging, _ = base.with_frame({"BatteryMSG": {"status": 2}}, 2.5)
+    charging, _ = base.with_frame(
+        {"StateMSG": {"charging_status": 2}, "BatteryMSG": {"status": 3}}, 2.5
+    )
     assert charging.charging
     assert charging.activity is Activity.CHARGING
+    # On the dock but not charging: before charging starts (1), full (0), held for rain (6).
+    for value in (0, 1, 6):
+        docked, _ = base.with_frame(
+            {"StateMSG": {"charging_status": value}, "BatteryMSG": {"status": 3}}, 2.6
+        )
+        assert not docked.charging, value
+    # 2026-09-26: a start held on the dock for rain reads paused 9 and charging_status 6.
+    rain, _ = base.with_frame(
+        {
+            "StateMSG": {"on_going_planning": 0, "planning_paused": 9, "charging_status": 6},
+            "BatteryMSG": {"status": 1},
+        },
+        2.7,
+    )
+    assert rain.pause_reason == "rain"
+    assert rain.activity is Activity.PAUSED
+    # Without charging_status, the battery's own status decides.
+    bare = RobotState()
+    bare, _ = bare.with_frame({"BatteryMSG": {"status": 3}}, 2.8)
+    assert bare.charging
 
     def with_state(**fields: object) -> RobotState:
         frame = {

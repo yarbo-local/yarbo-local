@@ -177,3 +177,15 @@ From 2026-09-18, East Lawn plan, app on the LAN. Fixtures: `plan-start-fails-rou
 ## Still open
 
 `cmd_recharge` cmd value, `plan_feedback` wire casing, `BatteryMSG.status` values while driving, what the robot publishes on controller theft, whether a base station ever relays more than one rover, TLS on 8883, and the app's text for every fault code other than 902.
+
+## 20. The app's plan, schedule and settings commands; the rain hold (2026-09-26)
+
+Recorded from the rover's broker while the owner worked through the app on the local route (its keep-alive was visible), then tried to start the East Lawn plan. Fixture: `app-plan-schedule-settings-rain.jsonl`.
+
+- **Plans.** `save_plan {id, areaIds, name, enable_self_order}` creates a plan; the app picks the next free id itself (3). `sort_plan {ids}` followed at once with the new plan first. `del_plan {id}` deletes, and it deleted the plan's schedule too: `read_schedules` returned `[]` straight after. Each reply is state 0 with a sentence in `msg`, such as "The plan was saved successfully.", and empty `data`.
+- **Schedules.** `save_schedule` carries `plan_id`, `name`, `schedule_type` 3, `week_day` 1, `start_time` "17:09:00", `end_time` "16:10:00", `return_method` 2, `enable`, `enable_last_progress`, `last_progress`. The reply echoes it and adds `interval_time`, `times`, `timezone` "", `is_weather_schedule` and `completed_this_window`. The field meanings and the time zone are open. No separate schedule delete was seen.
+- **General settings.** `save_global_params` sends a whole record, 56 of the 68 keys `read_global_params` returns; the change was `recharge_battery` 20 to 25.
+- **Before a start** the app sends `check_map_connectivity {ids: [4]}`; the East Lawn answered `disconnected: [], invalid: [], normal: []`.
+- **Also seen:** `read_tow_params` (`enable` false, `move_speed` 0.4), `read_no_charge_period` (`[]`), `read_low_cfd_config` (per-area low-confidence limits), `mower_head_sensor_switch {state: -99}` (a query; reply state 33), `smart_vision_control {state: 1}` then `{state: 0}` (what it switches is not established).
+- **The rain hold.** One second after `start_plan {id: 1, percent: 0}` the robot stopped charging (`on_going_recharging` 4 to 0, `charging_status` 2 to 0); three seconds later `planning_paused` went 0 to 9, `charging_status` 0 to 6 and `plan_msg` read "cancel ". `on_going_planning` never left 0 and nothing came on `data_feedback` for the start. The app showed "Rain detected". RTK was fixed (status 4, about 30 satellites). Eleven seconds later the app sent `clear_plan_state {state: 9}`; the robot stayed paused 9. So `planning_paused` 9 is rain.
+- **Charging means `charging_status` 2.** Across every capture only 2 has current flowing into the pack (up to +14.3 A, `BatteryMSG.status` 3). 0, 1 and 6 all show the pack discharging; 6 is the rain hold, at -0.4 A with `BatteryMSG.status` 1. The library had counted any non-zero value as charging and so called the rain hold "charging".

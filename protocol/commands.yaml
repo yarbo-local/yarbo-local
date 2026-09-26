@@ -270,12 +270,19 @@ commands:
     source: vendor SDK
 
   save_global_params:
-    payload: {id: 1, enable_elec_fence: bool}
+    payload: {id: 1, ...56 of the 68 keys read_global_params returns}
     ack: data_feedback
     controller: true
     risk: confirm
     status: candidate
     source: vendor SDK
+    observed: fixtures/3.14.11/app-plan-schedule-settings-rain.jsonl
+    notes: >
+      The app sent a whole record, not a patch: 56 keys, changing recharge_battery 20 to 25. It left out
+      close_blade_battery, close_blower_battery, fence_mini_area, low_battery_shutdown_enable, max_blower_speed,
+      max_vel, min_vel, over_time, push_pod_min_place_24, stop_blower_speed, tolerance_location and
+      use_global_low_cfd_dis, which kept their values. Reply state 0, msg "Global parameters updated
+      successfully.". A re-read showed the change stored.
 
   set_map_obstacle_switch:
     payload: {switch: 0|1}
@@ -615,6 +622,145 @@ commands:
     evidence: fixtures/3.14.11/read_recharge_point-asleep.jsonl
     verified_notes: "Dock record {chargingPoint{x,y,phi}, startPoint{x,y,phi}, straightPhi (radians), hasChargingStation, enable, id, name}."
     source: python-yarbo
+
+  # -- seen from the phone app on 2026-09-26 (fw 3.14.11), all in fixtures/3.14.11/app-plan-schedule-settings-rain.jsonl
+
+  save_plan:
+    payload: {id: int, areaIds: [int], name: str, enable_self_order: bool}
+    ack: data_feedback
+    controller: unknown
+    risk: confirm
+    status: candidate
+    observed: fixtures/3.14.11/app-plan-schedule-settings-rain.jsonl
+    source: app capture
+    notes: >
+      The app created plan "Capture test" with areaIds [4] (East Lawn). It chose the id itself, 3, the next free
+      one, and sent enable_self_order true. Reply state 0, msg "The plan was saved successfully.", data "". The app
+      then re-read the plans. Whether an existing id edits in place, as save_pathway does, is not yet seen.
+
+  sort_plan:
+    payload: {ids: [int]}
+    ack: data_feedback
+    controller: unknown
+    risk: confirm
+    status: candidate
+    observed: fixtures/3.14.11/app-plan-schedule-settings-rain.jsonl
+    source: app capture
+    notes: >
+      Sent by the app right after save_plan with the new plan first, ids [3, 1, 2]. Reply state 0, msg "The plans
+      have been sorted successfully.".
+
+  del_plan:
+    payload: {id: int}
+    ack: data_feedback
+    controller: unknown
+    risk: confirm
+    status: candidate
+    observed: fixtures/3.14.11/app-plan-schedule-settings-rain.jsonl
+    source: app capture
+    notes: >
+      Reply state 0, msg "Plan deleted successfully.". The plan had a schedule; read_schedules returned [] right
+      after, so deleting a plan deletes its schedules. The app's command for deleting a schedule on its own has
+      not been seen.
+
+  save_schedule:
+    payload: {id: int, plan_id: int, name: str, schedule_type: int, week_day: int, start_time: "HH:MM:SS", end_time: "HH:MM:SS", enable: bool, enable_last_progress: bool, last_progress: int, return_method: int}
+    ack: data_feedback
+    controller: unknown
+    risk: confirm
+    status: candidate
+    observed: fixtures/3.14.11/app-plan-schedule-settings-rain.jsonl
+    source: app capture
+    notes: >
+      The app saved schedule id 1 for plan 3 with schedule_type 3, week_day 1, start_time "17:09:00", end_time
+      "16:10:00", return_method 2, enable true, enable_last_progress false, last_progress 0. The reply (state 0)
+      echoes the record and adds interval_time 0, times 0, timezone "", is_weather_schedule 0 and
+      completed_this_window false. Meanings of schedule_type, week_day, return_method, and whether the times are
+      local or UTC, are not known yet; the end time earlier than the start time suggests a conversion.
+
+  smart_vision_control:
+    payload: {state: "0|1"}
+    ack: data_feedback
+    controller: unknown
+    risk: confirm
+    status: candidate
+    observed: fixtures/3.14.11/app-plan-schedule-settings-rain.jsonl
+    source: app capture
+    notes: >
+      Sent twice, state 1 then 0, when the owner toggled a vision setting in the app while asked to toggle person
+      detection. Replies state 0, msg "Smart vision control command sent: 1" and ": 0". StateMSG person detection
+      did not change in the capture, so what it switches is not established.
+
+  clear_plan_state:
+    payload: {state: int}
+    ack: none
+    controller: unknown
+    risk: confirm
+    status: candidate
+    observed: fixtures/3.14.11/app-plan-schedule-settings-rain.jsonl
+    source: app capture
+    notes: >
+      The app sent state 9 eleven seconds after a start was held for rain (planning_paused 9). No reply came and
+      the robot stayed paused 9. The value matches the pause code; it looks like an acknowledgement.
+
+  check_map_connectivity:
+    payload: {ids: [int]}
+    ack: data_feedback
+    controller: false
+    risk: safe
+    status: candidate
+    observed: fixtures/3.14.11/app-plan-schedule-settings-rain.jsonl
+    source: app capture
+    notes: >
+      The app sends it with the plan's area ids just before start_plan. For East Lawn (id 4), with its pathway
+      linked to the dock, the reply was state 0 with data disconnected [], invalid [], normal [].
+
+  read_no_charge_period:
+    payload: {}
+    ack: data_feedback
+    controller: false
+    risk: safe
+    status: candidate
+    observed: fixtures/3.14.11/app-plan-schedule-settings-rain.jsonl
+    source: app capture
+    notes: Reply state 0, data []. By its name, times when the robot must not charge; none are set here.
+
+  read_low_cfd_config:
+    payload: {}
+    ack: data_feedback
+    controller: false
+    risk: safe
+    status: candidate
+    observed: fixtures/3.14.11/app-plan-schedule-settings-rain.jsonl
+    source: app capture
+    notes: >
+      "Low confidence config retrieved successfully." Per area: name, area in square metres,
+      area_max_low_cfd_dis 50.0 and path_max_low_cfd_dis 10.0, plus the same limits globally. Related to RTK
+      confidence; units and effect not established.
+
+  mower_head_sensor_switch:
+    payload: {state: int}
+    ack: data_feedback
+    controller: unknown
+    risk: confirm
+    status: candidate
+    observed: fixtures/3.14.11/app-plan-schedule-settings-rain.jsonl
+    source: app capture
+    notes: >
+      The app sent state -99 on opening a settings screen. Reply state 33, msg "Mower sensor switch status query
+      feedback.", data "". So -99 queries; other values probably set the head's sensor switches (compare
+      m1pro_sensor_switch in the area settings). Only the query has been seen.
+
+  read_tow_params:
+    payload: {}
+    ack: data_feedback
+    controller: false
+    risk: safe
+    status: candidate
+    observed: fixtures/3.14.11/app-plan-schedule-settings-rain.jsonl
+    source: app capture
+    notes: Reply state 0, data enable false, move_speed 0.4. Towing mode settings.
+
 
 # Never registered. Listed so a reviewer sees the line being crossed.
 forbidden:

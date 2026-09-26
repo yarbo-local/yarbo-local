@@ -46,8 +46,11 @@ FAULTS: dict[int, tuple[str, str, str]] = {
 }
 UNIDENTIFIED_FAULT_HINT = "This code is not identified yet. The Yarbo app shows what it means."
 
-# StateMSG.planning_paused. 7 was seen on the wire together with fault 902; the rest
-# come from the vendor SDK and are unconfirmed.
+CHARGING_STATUS_CHARGING = 2  # StateMSG.charging_status while current flows into the pack
+
+# StateMSG.planning_paused. 1 was seen after a pause from the app, 7 together with
+# fault 902, and 9 when the rain sensor stopped a start (the app said "Rain detected").
+# The rest come from the vendor SDK and are unconfirmed.
 PAUSE_REASONS = {
     1: "manual",
     2: "low_battery_recharging",
@@ -56,6 +59,7 @@ PAUSE_REASONS = {
     5: "bumper",
     6: "stuck",
     7: "fault",
+    9: "rain",
 }
 
 
@@ -368,15 +372,19 @@ class RobotState:
 
     @property
     def charging(self) -> bool:
-        """Candidate rule: ``BatteryMSG.status`` above 1 or ``StateMSG.charging_status`` set.
+        """``StateMSG.charging_status`` 2: the only value ever seen with current flowing into
+        the pack (up to +14 A on 3.14.11). 0, 1 and 6 were all seen with the pack
+        discharging; 6 while a start was held on the dock for rain. Without that field,
+        ``BatteryMSG.status`` above 1, which reads 3 on the charger but lags by a few frames.
 
         ``BodyMsg.recharge_state`` is not used: it read 3 while the robot sat off any
         charger and discharged, so the community's 'wired charging' mapping is wrong.
-        No charging capture exists yet, so this is unverified in the positive direction.
         """
+        charging_status = _int_or_none(self.get("StateMSG.charging_status"))
+        if charging_status is not None:
+            return charging_status == CHARGING_STATUS_CHARGING
         status = _int_or_none(self.get("BatteryMSG.status")) or 0
-        charging_status = _int_or_none(self.get("StateMSG.charging_status")) or 0
-        return status > 1 or charging_status > 0
+        return status > 1
 
     @property
     def error_code(self) -> int:

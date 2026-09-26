@@ -27,6 +27,13 @@ StateMSG.planning_paused:
   5: bumper
   6: stuck
   7: fault              # seen on the wire with StateMSG.error_code 902 (2026-09-15)
+  9: rain               # 2026-09-26, fw 3.14.11: app/start_plan of the East Lawn plan from the
+                        # dock; 1 s later charging stopped (on_going_recharging 4->0,
+                        # charging_status 2->0), 4 s later planning_paused 0->9,
+                        # charging_status 0->6, plan_msg "cancel ". on_going_planning stayed 0
+                        # and no data_feedback came for start_plan. The app showed
+                        # "Rain detected". RTK was fixed (status 4, ~30 satellites). The app
+                        # then sent clear_plan_state {"state": 9}; the robot stayed paused 9.
 
 StateMSG.error_code:
   # The robot sends only the number; the Yarbo app owns the wording. A code is listed
@@ -40,6 +47,15 @@ StateMSG.error_code:
                         # Fixture: mower-pro-fault-902-tilted.jsonl
   observed_unidentified:
     901: "2026-09-14 East Lawn plan, 17:45-19:59; the run ended at 79%"
+
+StateMSG.charging_status:
+  2: charging           # the only value seen with current into the pack: up to +14.3 A,
+                        # BatteryMSG.status 3 (all captures to 2026-09-26)
+  observed:
+    0: "off the dock, and on the dock at 100% with the pack at -0.3 A"
+    1: "on the dock before charging began, pack at -0.5 A"
+    6: "2026-09-26, on the dock while a start was held for rain (paused 9), pack at -0.4 A, BatteryMSG.status 1"
+  charging_rule: "== 2"
 
 StateMSG.on_going_recharging:
   0: not_started

@@ -71,14 +71,13 @@ def test_a_start_shows_what_we_know_and_what_is_news() -> None:
     assert any("StateMSG.on_going_planning" in effect for effect in start.effects)
 
     check = named(observer, "check_map_connectivity")
-    assert check.standing == "unknown", "the app uses a command the registry has never listed"
-    assert check.news
+    assert check.standing == "candidate", "registered from the 2026-09-26 app capture"
     assert check.reply is not None
     assert check.reply["state"] == 0
     assert check.reply["data"] == {"disconnected": [], "invalid": [], "normal": []}
 
     news = {e["name"] for e in observer.to_list(news_only=True)}
-    assert {"check_map_connectivity", "read_mower_area_params"} <= news
+    assert "read_mower_area_params" in news
     assert "start_plan" not in news
 
 
