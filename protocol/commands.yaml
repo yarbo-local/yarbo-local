@@ -52,6 +52,10 @@ commands:
       only commands that need it may trigger it; reads never do. Answered in about 40 ms on
       2026-09-15 with state 0 and the acknowledgement text the session checks for.
       StateMSG.machine_controller read 1 before and after, so it does not show who holds it.
+      During a running plan it PAUSES the plan: on 2026-10-04, sent alone while mowing, on_going_planning went
+      1 to 0 with planning_paused 1 (manual) within two seconds and the blades stopped; resume brought the plan
+      back. It also plays the voice prompt "app controller connected". So nothing that needs the controller
+      should be sent during a plan unless a pause is acceptable.
     source: python-yarbo, vendor SDK; verified on the robot
 
   set_working_state:
@@ -127,7 +131,9 @@ commands:
   start_plan:
     payload: {id: int, percent: int}
     ack: plan_feedback
-    controller: true
+    # Works without taking the controller: tested on the robot 2026-10-03 and 2026-10-04 (west lawn, twice). Taking
+    # it first is not needed, and taking it while a plan runs pauses the plan (see get_controller).
+    controller: false
     awake: true
     risk: safe
     status: verified
@@ -147,7 +153,8 @@ commands:
   pause:
     payload: {}
     ack: plan_feedback
-    controller: true
+    # Works without taking the controller: tested on the robot while mowing, 2026-10-04.
+    controller: false
     awake: true
     risk: safe
     status: verified
@@ -162,7 +169,8 @@ commands:
   resume:
     payload: {}
     ack: plan_feedback
-    controller: true
+    # Works without taking the controller: tested on the robot while mowing, 2026-10-04.
+    controller: false
     awake: true
     risk: safe
     status: verified
@@ -179,7 +187,8 @@ commands:
   stop:
     payload: {}
     ack: plan_feedback
-    controller: true
+    # Works without taking the controller: tested on the robot while mowing, 2026-10-04.
+    controller: false
     awake: true
     risk: safe
     status: verified
@@ -222,6 +231,8 @@ commands:
     tried_notes: >
       2026-09-26: sent (state 1 then 0) without error; nothing in the robot's reports changed. Needs someone to
       listen.
+      2026-10-02, a person beside the robot on the dock: silent, both for state 1 alone (30 s) and for state 1
+      then 0. The buzzing first heard that day came from song_cmd.
 
   song_cmd:
     payload: {song_name: find yarbo}
@@ -232,6 +243,15 @@ commands:
     source: vendor SDK
     tried_notes: >
       2026-09-26: sent without error; nothing in the robot's reports changed. Needs someone to listen.
+      2026-10-02, a person beside the robot on the dock: three buzzes of about 5 s each, starting at once.
+      Silent once, when sent in the same second as get_controller (whose voice prompt "app controller
+      connected" played instead). No capture of the wire was running; repeat with one to verify.
+      2026-10-04, with a plan on: sent right after get_controller; within the next seconds the plan went to
+      planning 0, pause code 1 (manual), plan_msg "Goal canceled ". Which of the two did it is not separated
+      yet. resume brought the plan back.
+      2026-10-04, while mowing with the controller already held: the plan was NOT interrupted (9 m in 18 s,
+      blades on); StateMSG.feedback_keepalive_active went false to true. So the pause seen earlier that day
+      came from get_controller, not from the song.
 
   light_ctrl:
     payload: {led_head: 0-255, led_left_w: 0-255, led_right_w: 0-255, body_left_r: 0-255, body_right_r: 0-255, tail_left_r: 0-255, tail_right_r: 0-255}
@@ -243,6 +263,12 @@ commands:
     tried_notes: >
       2026-09-26: no reply and LedInfoMSG did not change. The robot drives its body and tail LEDs from its status
       (StateMSG.en_state_led true); they went off when charging started. Needs someone to look.
+      2026-10-02, a person beside the robot on the dock while charging: nothing visible lit for any channel
+      alone or all seven at 255 (twice). Not tried away from the dock or in the dark.
+      2026-10-04, away from the dock with a plan on: all seven at 255 changed LedInfoMSG at once (led_head 0
+      to 50, led_left_w and led_right_w 0 to 150, body_left/right r g b 0 to 200/180/140, tail_left_r and
+      tail_right_r 0 to 200) and HeadMsg.head_led_brightness 0 to 50; all at 0 put every one back to 0.
+      Capture: captures/east-run-tests-1004.jsonl (not yet cut into a fixture).
 
   set_sound_param:
     payload: {enable: bool, vol: 0.0-1.0, mode: 0}
@@ -343,7 +369,8 @@ commands:
   mower_speed_cmd:
     payload: {state: percent}
     ack: none
-    controller: true
+    # Not sent with the controller: taking it while a plan runs pauses the plan (see get_controller).
+    controller: false
     heads: [3, 5]
     risk: safe
     status: candidate
@@ -351,6 +378,10 @@ commands:
     tried_notes: >
       2026-09-26: no reply; on the dock, outside a plan, the blade motors stayed at 0 for state 30. Probably refused
       outside a run.
+      2026-10-04, sent as 50 and 100 while the robot stood on a pathway with a plan on: blade speed and rpm
+      stayed 0. Not yet tried while mowing.
+      2026-10-04, while mowing the west lawn (blade speed reported -80/80, 2800 rpm): 50 and then 100 changed
+      nothing in 14 s each. The plan keeps its own blade speed.
 
   cmd_set_chute_angle:
     payload: {cmd: degrees}
@@ -580,25 +611,46 @@ commands:
   emergency_stop_active:
     payload: {}
     ack: none
-    controller: true
+    # Not sent with the controller: taking it while a plan runs pauses the plan (see get_controller).
+    controller: false
     risk: confirm
     status: candidate
     source: python-yarbo
     tried_notes: >
       2026-09-26: no visible change while idle on the dock (already paused 9). The app's stop during a run showed
       planning_paused 4 (2026-09-15). Needs a run.
+      2026-10-04, sent while the robot drove a pathway with a plan on (on_going_planning 3): it kept driving,
+      4.0 m in the next 14 s; no pause code, no error. Not yet tried while mowing.
+      2026-10-04, while mowing: no effect either; the robot mowed on, 6.6 m in the next 14 s at 2800 rpm.
+      Owner, 2026-10-04: the app has no emergency stop; it is a physical button on the robot. This command has
+      never been seen from the app and did nothing on the dock, on a pathway or while mowing, so it is not a
+      way to stop the robot. Use pause or stop.
   emergency_unlock:
     payload: {confirm: 1}
     ack: none
-    controller: true
+    # Not sent with the controller: taking it while a plan runs pauses the plan (see get_controller).
+    controller: false
     risk: confirm
     status: candidate
     notes: >-
-      The app sent confirm 1 after an emergency stop on 2026-09-15, with push_rod_cmd state 0
-      just before it.
-    source: python-yarbo; payload observed from the app
+      Seen once on the app topic with confirm 1, on 2026-09-15, after the physical stop button was
+      pressed and pulled out again; the owner says the phone did not send it.
+    source: python-yarbo; payload observed on the bus
     tried_notes: >
       2026-09-26: no visible change while idle on the dock. Needs a run with an emergency stop.
+      2026-10-04, sent 16 s after that emergency_stop_active: no visible change.
+      2026-10-04, while mowing, after that emergency_stop_active: no visible change.
+      Owner, 2026-10-04: the emergency stop is a physical button on the robot, unlocking it is pulling the
+      button back out, and the phone app did not send this message: it appeared on the bus when the button was
+      pulled out. The capture of 2026-09-15: 16:02:06 BodyMsg.body_stop_button_state 1, plan cancelled with
+      pause code 4; 16:02:07 push_rod_cmd {state: 0} on the app topic; 16:02:09 button state 3; 16:02:12
+      emergency_unlock {confirm: 1} on the app topic and button state 0 in the same second; 16:02:14 resume,
+      and the plan ran again. A capture cannot tell who published a message, so a message on an app topic is
+      not proof the phone sent it. Sent by us with no button pressed it does nothing.
+      Owner, 2026-10-04, about that day: he was holding the robot against a tilt error, hit the stop button by
+      accident and pulled it out again; the Yarbo app was open on a locked phone in his pocket (its keep-alive
+      every 10 s is in the capture). After the button is released the plan stays paused until resume is hit.
+
   shutdown:
     payload: {}
     ack: data_feedback
@@ -861,7 +913,8 @@ commands:
   clear_plan_state:
     payload: {state: int}
     ack: none
-    controller: unknown
+    # Not sent with the controller: taking it while a plan runs pauses the plan (see get_controller).
+    controller: false
     risk: confirm
     status: candidate
     observed: fixtures/3.14.11/app-plan-schedule-settings-rain.jsonl

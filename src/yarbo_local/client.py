@@ -191,7 +191,25 @@ class YarboRobot:
         refusals = check(action, self.state, connected=self.session.connected)
         if refusals:
             raise PreflightError(action, refusals)
+        if action is Action.START and plan_id is not None:
+            await self._prepare_start(plan_id)
         await self.session.send(COMMANDS[action], payload)
+
+    async def _prepare_start(self, plan_id: int) -> None:
+        """Send what the app sends before ``start_plan``, in the same order.
+
+        The app checks that the plan's areas connect to the dock, then fetches the map,
+        and never takes the controller. This copies the app; it does not decide whether a
+        start works. On 2026-10-04 this sequence, and the app's exact messages with its
+        keep-alive, stalled on the East Lawn path just as the older shortcut did on
+        2026-10-02. The connectivity reply is not interpreted: it was three empty lists
+        whether or not a start worked.
+        """
+        await self.wake()  # the app's keep-alive is already running when it starts a plan
+        areas = next((plan.area_ids for plan in await self.plans() if plan.id == plan_id), ())
+        if areas:
+            await self.session.request("check_map_connectivity", {"ids": list(areas)})
+        await self.session.request("get_map", timeout=30.0)
 
     async def dock(self) -> None:
         """Send the robot home. Also clears a latched fault, which ``resume`` cannot."""
@@ -212,12 +230,14 @@ class YarboRobot:
     async def start_plan(
         self, plan_id: int, *, percent: int = 0, confirm_within: float | None = None
     ) -> None:
-        """Start a plan and wait for the robot's verdict.
+        """Start a plan the way the app does and wait for the robot's verdict.
 
-        The robot never answers ``start_plan``. One that can start reports route calculation
-        within a second; one that cannot leaves a negative planning code and says nothing
-        else, and since that code may already be there from an earlier failure, only the
-        running codes count as a start. Raises :class:`PlanStartError` otherwise.
+        The plan's areas are checked for a link to the dock and the map is fetched first,
+        as the app does; the controller is not taken. The robot never answers
+        ``start_plan``. One that can start reports route calculation within a second; one
+        that cannot leaves a negative planning code and says nothing else, and since that
+        code may already be there from an earlier failure, only the running codes count as
+        a start. Raises :class:`PlanStartError` otherwise.
         """
         await self.act(Action.START, plan_id=plan_id, percent=percent)
         wait = START_CONFIRM_S if confirm_within is None else confirm_within

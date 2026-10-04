@@ -161,6 +161,7 @@ async def test_pause_then_resume_as_the_app_does(sim: Simulator) -> None:
     await robot.resume()
     await asyncio.sleep(0.05)
     assert robot.state.plan_running
+    assert "get_controller" not in [name for name, _ in sim.log], "the app never takes it here"
     await robot.close()
 
 
@@ -185,6 +186,26 @@ async def test_start_plan_sends_the_id_and_never_the_schema(sim: Simulator) -> N
     await asyncio.sleep(0.05)
     assert sim.log[-1] == ("start_plan", {"id": plan_id, "percent": 0})
     assert robot.state.planning_code == 2, "calculating the route, as on the real robot"
+    await robot.close()
+
+
+async def test_start_plan_sends_what_the_app_sends_and_not_the_controller(
+    sim: Simulator,
+) -> None:
+    _ready_to_mow(sim)
+    sim.plans.append({"id": 1, "name": "east lawn plan", "areaIds": [4]})
+    robot = await _robot(sim)
+    await robot.wake()
+    await asyncio.sleep(0.05)
+    await robot.start_plan(1)
+    sent = [(name, value) for name, value in sim.log if name != "set_working_state"]
+    assert [name for name, _ in sent] == [
+        "read_all_plan",
+        "check_map_connectivity",
+        "get_map",
+        "start_plan",
+    ], sent
+    assert ("check_map_connectivity", {"ids": [4]}) in sent, "the plan's areas, as the app sends"
     await robot.close()
 
 
@@ -224,6 +245,7 @@ async def test_stop_ends_the_plan_where_it_is(sim: Simulator) -> None:
     await robot.stop()
     await asyncio.sleep(0.05)
     assert sim.log[-1] == ("stop", {})
+    assert "get_controller" not in [name for name, _ in sim.log], "the app never takes it here"
     assert not robot.state.plan_running
     assert robot.state.pause_reason is None, "a stop is not a pause"
     with pytest.raises(PreflightError):

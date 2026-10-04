@@ -266,6 +266,12 @@ class Simulator:
     def cmd_get_map(self, value: Any) -> None:
         self._feedback("get_map", 0, "", self._blob(self.site_map))
 
+    def cmd_check_map_connectivity(self, value: Any) -> None:
+        """As seen on 3.14.11 for areas linked to the dock: three empty lists."""
+        self._feedback(
+            "check_map_connectivity", 0, "", {"disconnected": [], "invalid": [], "normal": []}
+        )
+
     def cmd_get_all_map_backup(self, value: Any) -> None:
         self._feedback("get_all_map_backup", 0, "Map backups retrieved.", self._blob({"data": []}))
 
