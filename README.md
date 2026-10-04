@@ -65,18 +65,22 @@ Changing things is typed too. Each of these was sent to a real robot and read ba
 
 ```python
 async with YarboRobot.for_host("192.168.50.184") as robot:
-    await robot.start_plan(1)                     # the app's sequence; waits for the robot's verdict
-    await robot.pause(); await robot.resume(); await robot.stop(); await robot.dock()
+    await robot.start_plan(1)  # the app's sequence; waits for the robot's verdict
+    await robot.pause()
+    await robot.resume()
+    await robot.stop()
+    await robot.dock()
 
-    route = await robot.preview_route(1)          # the route for a plan, without moving the robot
+    route = await robot.preview_route(1)  # the route for a plan, without moving the robot
     plan_id = await robot.save_plan("Front and back", [4, 9])
-    await robot.save_schedule(plan_id=plan_id, name="Monday", week_day=1,
-                              start_time="10:00:00", end_time="12:00:00")
+    await robot.save_schedule(
+        plan_id=plan_id, name="Monday", week_day=1, start_time="10:00:00", end_time="12:00:00"
+    )
     await robot.update_mower_area_params(4, first_clean_params={"blade_height": 60})
     await robot.update_global_params(recharge_battery=25)
     await robot.set_sound(enabled=True, volume=0.5)
 
-    site = await robot.site_map()                 # zones in metres from their reference
+    site = await robot.site_map()  # zones in metres from their reference
     area = site.areas[0]
     zone = await robot.save_nogozone("Flower bed", [(1, 1), (3, 1), (3, 3)], area.ref)
     await robot.delete_nogozone(zone["id"])
