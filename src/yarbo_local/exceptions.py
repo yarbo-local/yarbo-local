@@ -22,6 +22,14 @@ class CommandRefusedError(YarboError):
     """The registry refused to send: unknown name, unverified command, or unconfirmed risk."""
 
 
+class PlanRunningError(CommandRefusedError):
+    """The command needs the controller, and taking it would pause the running plan.
+
+    Seen on 3.14.11: ``get_controller`` during a mow cancels the goal with pause code 1 and
+    stops the blades. Pass ``may_pause_plan=True`` to send it anyway.
+    """
+
+
 class CommandError(YarboError):
     """The robot answered with a non-zero state."""
 

@@ -25,7 +25,8 @@ def test_generated_map_matches_checked_in_shape(protocol_dir: Path) -> None:
     assert "BatteryMSG.capacity" in fields
     assert fields["BatteryMSG.capacity"]["entity"] == "sensor"
     assert fields["BatteryMSG.current"]["status"] == "verified"
-    assert fields["BatteryMSG.capacity"]["status"] == "candidate"  # source: vendor SDK
+    assert fields["BatteryMSG.capacity"]["status"] == "verified"  # confirmed on our robot
+    assert fields["BatteryMSG.health"]["status"] == "candidate"  # source: vendor SDK
 
 
 def test_promote_writes_seed_and_regenerates(protocol_dir: Path) -> None:

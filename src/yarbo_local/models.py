@@ -63,12 +63,28 @@ PAUSE_REASONS = {
 }
 
 
+# A plan is "waiting" when it reports itself running, with no pause code, while the robot
+# has stayed within WAITING_RADIUS_M for WAITING_AFTER_S. Seen on 3.14.11 with a car parked
+# on a pathway: planning stayed 3 with no pause code, no error and no barrier points while
+# the robot stood there, creeping under a metre now and then. Turns and edge stops while
+# mowing lasted about ten seconds.
+WAITING_AFTER_S = 60.0
+WAITING_RADIUS_M = 1.0
+WAITING_PLANNING_CODES = frozenset({1, 3})  # mowing, or on the way to the area
+
+# BodyMsg.body_stop_button_state: 0 at rest. On 2026-09-15 it read 1 when the physical stop
+# button was pressed (pause code 4), 3 three seconds later, and 0 again once the button had
+# been pulled out.
+STOP_BUTTON_RELEASED = 0
+
+
 class Activity(StrEnum):
     SLEEPING = "sleeping"
     IDLE = "idle"
     CALCULATING_ROUTE = "calculating_route"
     HEADING_TO_AREA = "heading_to_area"
     WORKING = "working"
+    WAITING = "waiting"
     WAYPOINT = "waypoint"
     COMPLETED = "completed"
     PAUSED = "paused"
@@ -316,14 +332,35 @@ class RobotState:
     serial: str | None = None
     last_frame_at: float | None = None
     last_heartbeat_at: float | None = None
+    # Where the robot stands and since when it has stood there with a plan running:
+    # (x, y, at). The time restarts whenever it moves more than WAITING_RADIUS_M, and on
+    # every frame in which no plan is driving it.
+    anchor: tuple[float, float, float] | None = None
 
     # -- construction
 
     def with_frame(self, frame: Mapping[str, Any], at: float) -> tuple[RobotState, bool]:
         merged, changed = deep_merge(self.raw, frame)
-        if not changed:
-            return replace(self, last_frame_at=at), False
-        return replace(self, raw=merged, last_frame_at=at), True
+        was_waiting = self.waiting
+        anchor = self._anchor_after(merged, at)
+        state = replace(self, raw=merged if changed else self.raw, last_frame_at=at, anchor=anchor)
+        return state, changed or state.waiting != was_waiting
+
+    def _anchor_after(self, raw: Mapping[str, Any], at: float) -> tuple[float, float, float] | None:
+        x = _float_or_none(_get(raw, "CombinedOdom.x"))
+        y = _float_or_none(_get(raw, "CombinedOdom.y"))
+        if x is None or y is None:
+            return self.anchor
+        driving = _int_or_none(
+            _get(raw, "StateMSG.on_going_planning")
+        ) in WAITING_PLANNING_CODES and not _int_or_none(_get(raw, "StateMSG.planning_paused"))
+        if (
+            not driving
+            or self.anchor is None
+            or math.hypot(x - self.anchor[0], y - self.anchor[1]) > WAITING_RADIUS_M
+        ):
+            return (x, y, at)
+        return self.anchor
 
     def with_heartbeat(self, hb: Heartbeat, at: float) -> tuple[RobotState, bool]:
         changed = self.awake != hb.awake
@@ -428,6 +465,40 @@ class RobotState:
         return self.recharging_code in RECHARGING_IN_TRANSIT
 
     @property
+    def still_seconds(self) -> float | None:
+        """How long a running plan has kept the robot within a metre of one spot.
+
+        Measured at the last frame. It is 0 whenever no plan is driving the robot.
+        """
+        if self.anchor is None or self.last_frame_at is None:
+            return None
+        return max(0.0, self.last_frame_at - self.anchor[2])
+
+    @property
+    def waiting(self) -> bool:
+        """A plan that says it is running while the robot is not moving.
+
+        The robot does not say why. A blocked pathway is the one cause seen so far.
+        """
+        still = self.still_seconds
+        return (
+            self.planning_code in WAITING_PLANNING_CODES
+            and self.paused_code == 0
+            and still is not None
+            and still >= WAITING_AFTER_S
+        )
+
+    @property
+    def stop_button_state(self) -> int | None:
+        return _int_or_none(self.get("BodyMsg.body_stop_button_state"))
+
+    @property
+    def stop_button_engaged(self) -> bool | None:
+        """The physical stop button is pressed, or not yet reported released. None if unknown."""
+        state = self.stop_button_state
+        return None if state is None else state != STOP_BUTTON_RELEASED
+
+    @property
     def head_type(self) -> int | None:
         return _int_or_none(self.get("HeadMsg.head_type"))
 
@@ -528,6 +599,8 @@ class RobotState:
         # and for some seconds on the dock, where it no longer means paused.
         if self.paused_code > 0 and not self.returning and not self.charging:
             return Activity.PAUSED
+        if self.waiting:
+            return Activity.WAITING
         if p == 2:
             return Activity.CALCULATING_ROUTE
         if p == 3:
@@ -884,6 +957,61 @@ def parse_plans(payload: Any) -> list[PlanSummary]:
             )
         )
     return plans
+
+
+@dataclass(frozen=True, slots=True)
+class Schedule:
+    """One stored schedule, as ``read_schedules`` and ``save_schedule`` return it.
+
+    Only a disabled schedule was ever stored on a real robot, so what ``schedule_type``,
+    ``week_day`` and ``return_method`` mean when one fires is not known; they are kept as
+    the numbers the robot holds. The app sent 3, 1 and 2.
+    """
+
+    id: int
+    plan_id: int | None
+    name: str
+    enabled: bool
+    start_time: str
+    end_time: str
+    week_day: int | None
+    schedule_type: int | None
+    return_method: int | None
+    resume_progress: bool
+    last_progress: int
+    raw: Mapping[str, Any] = field(default_factory=dict, compare=False)
+
+    @classmethod
+    def from_wire(cls, item: Any) -> Schedule | None:
+        if not isinstance(item, Mapping):
+            return None
+        schedule_id = _int_or_none(item.get("id"))
+        if schedule_id is None:
+            return None
+        return cls(
+            id=schedule_id,
+            plan_id=_int_or_none(item.get("plan_id")),
+            name=str(item.get("name") or ""),
+            enabled=bool(item.get("enable")),
+            start_time=str(item.get("start_time") or ""),
+            end_time=str(item.get("end_time") or ""),
+            week_day=_int_or_none(item.get("week_day")),
+            schedule_type=_int_or_none(item.get("schedule_type")),
+            return_method=_int_or_none(item.get("return_method")),
+            resume_progress=bool(item.get("enable_last_progress")),
+            last_progress=_int_or_none(item.get("last_progress")) or 0,
+            raw=dict(item),
+        )
+
+
+def parse_schedules(payload: Any) -> list[Schedule]:
+    """Accept a bare list, ``{"data": [...]}``, or None."""
+    items: Any = payload
+    if isinstance(items, Mapping):
+        items = items.get("data")
+    if not isinstance(items, list):
+        return []
+    return [s for s in (Schedule.from_wire(item) for item in items) if s is not None]
 
 
 @dataclass(frozen=True, slots=True)

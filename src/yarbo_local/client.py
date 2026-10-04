@@ -3,23 +3,28 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Callable, Coroutine
+from collections.abc import Callable, Coroutine, Iterable, Sequence
 import contextlib
 from types import TracebackType
 from typing import Any
 
-from .exceptions import ConnectionLostError, PlanStartError, PreflightError
+from . import payloads
+from .exceptions import CommandError, ConnectionLostError, PlanStartError, PreflightError
+from .feedback import PlanFeedback
 from .models import (
     Feedback,
     GpsReference,
     PlanSummary,
     RobotState,
+    Schedule,
     SiteMap,
     parse_area_params,
     parse_gps_ref,
     parse_plans,
+    parse_schedules,
     parse_site_map,
 )
+from .payloads import PointLike, RefLike
 from .preflight import COMMANDS, Action, check
 from .registry import Registry
 from .session import Session, StateListener
@@ -154,14 +159,56 @@ class YarboRobot:
     async def global_params(self) -> Any:
         return (await self.session.request("read_global_params")).payload
 
-    async def schedules(self) -> Any:
-        return (await self.session.request("read_schedules")).payload
+    async def schedules(self) -> list[Schedule]:
+        return parse_schedules((await self.session.request("read_schedules")).payload)
+
+    async def mower_area_params(self, area_id: int) -> dict[str, Any] | None:
+        """Mowing settings for one area; None when the robot has no such area."""
+        fb = await self.session.request("read_mower_area_params", {"id": area_id})
+        return parse_area_params(fb.payload, area_id)
+
+    async def plan_history(self) -> list[dict[str, Any]]:
+        """Past runs as the robot keeps them, newest handling left to the caller."""
+        payload = (await self.session.request("read_all_plan_history", timeout=15.0)).payload
+        items = payload.get("data") if isinstance(payload, dict) else payload
+        return [dict(item) for item in items or [] if isinstance(item, dict)]
+
+    async def plan_progress(self) -> PlanFeedback | None:
+        """The plan being worked, or the last one; None when the robot has none to report."""
+        try:
+            fb = await self.session.request("get_plan_feedback", {}, timeout=10.0)
+        except CommandError as err:
+            if err.state == -1:  # "no plan working"
+                return None
+            raise
+        return PlanFeedback.from_wire(fb.payload)
+
+    async def preview_route(self, plan_id: int, *, percent: int = 0) -> PlanFeedback | None:
+        """The route the robot would drive for a plan, without moving it.
+
+        Shaped like the progress of a running plan: one path per area, ``path_type`` 0
+        for the fill and 1 for the lap along the edge; ``total_s`` is the estimate.
+        """
+        if not 0 <= percent <= 99:
+            raise ValueError("percent must be 0 to 99")
+        fb = await self.session.request(
+            "preview_plan_path", {"id": plan_id, "percent": percent}, timeout=30.0
+        )
+        return PlanFeedback.from_wire(fb.payload)
 
     async def raw_request(
-        self, name: str, payload: Any = None, *, timeout: float = 8.0, confirmed: bool = False
+        self,
+        name: str,
+        payload: Any = None,
+        *,
+        timeout: float = 8.0,
+        confirmed: bool = False,
+        may_pause_plan: bool = False,
     ) -> Feedback:
-        """Registry-checked request for anything not wrapped above."""
-        return await self.session.request(name, payload, timeout=timeout, confirmed=confirmed)
+        """Registry-checked request for anything not wrapped here."""
+        return await self.session.request(
+            name, payload, timeout=timeout, confirmed=confirmed, may_pause_plan=may_pause_plan
+        )
 
     # -- actions
 
@@ -193,7 +240,8 @@ class YarboRobot:
             raise PreflightError(action, refusals)
         if action is Action.START and plan_id is not None:
             await self._prepare_start(plan_id)
-        await self.session.send(COMMANDS[action], payload)
+        # Going home takes the controller, which ends the mow; that is what was asked for.
+        await self.session.send(COMMANDS[action], payload, may_pause_plan=action is Action.DOCK)
 
     async def _prepare_start(self, plan_id: int) -> None:
         """Send what the app sends before ``start_plan``, in the same order.
@@ -249,3 +297,271 @@ class YarboRobot:
         if self.state.plan_running:
             return
         raise PlanStartError(plan_id, self.state.plan_error)
+
+    # -- plans and schedules (verified on 3.14.11; each call is the explicit confirmation)
+
+    async def save_plan(
+        self,
+        name: str,
+        area_ids: Sequence[int],
+        *,
+        plan_id: int | None = None,
+        self_order: bool = True,
+    ) -> int:
+        """Create a plan, or with ``plan_id`` change its name and areas. Returns its id.
+
+        The robot numbers a new plan itself and does not say which number it chose, so
+        the id is found by reading the plans before and after.
+        """
+        body = payloads.plan(name, area_ids, plan_id=plan_id, self_order=self_order)
+        if plan_id is not None:
+            await self.session.request("save_plan", body, confirmed=True)
+            return plan_id
+        before = {plan.id for plan in await self.plans()}
+        await self.session.request("save_plan", body, confirmed=True)
+        created = sorted(plan.id for plan in await self.plans() if plan.id not in before)
+        if len(created) != 1:
+            raise CommandError("save_plan", 0, "the plan was saved but its id cannot be told")
+        return created[0]
+
+    async def delete_plan(self, plan_id: int) -> None:
+        """Delete a plan. The robot deletes the schedules that use it as well."""
+        await self.session.request("del_plan", {"id": plan_id}, confirmed=True)
+
+    async def sort_plans(self, plan_ids: Sequence[int]) -> None:
+        """Set the order the plans are listed in."""
+        await self.session.request("sort_plan", {"ids": [int(i) for i in plan_ids]}, confirmed=True)
+
+    async def save_schedule(
+        self,
+        *,
+        plan_id: int,
+        name: str,
+        start_time: str,
+        end_time: str,
+        week_day: int,
+        schedule_id: int | None = None,
+        schedule_type: int = 3,
+        enabled: bool = True,
+        return_method: int = 2,
+        resume_progress: bool = False,
+        last_progress: int = 0,
+    ) -> Schedule:
+        """Store a schedule and return it as the robot holds it.
+
+        Times are ``HH:MM:SS``. Without ``schedule_id`` the next free number is used, as
+        the app does. See :class:`Schedule` for what is and is not known about the numbers.
+        """
+        if schedule_id is None:
+            schedule_id = max((s.id for s in await self.schedules()), default=0) + 1
+        body = payloads.schedule(
+            schedule_id=schedule_id,
+            plan_id=plan_id,
+            name=name,
+            start_time=start_time,
+            end_time=end_time,
+            week_day=week_day,
+            schedule_type=schedule_type,
+            enabled=enabled,
+            return_method=return_method,
+            resume_progress=resume_progress,
+            last_progress=last_progress,
+        )
+        fb = await self.session.request("save_schedule", body, confirmed=True)
+        stored = Schedule.from_wire(fb.payload)
+        if stored is None:
+            raise CommandError("save_schedule", fb.state, "no stored schedule in the reply")
+        return stored
+
+    async def delete_schedule(self, schedule_id: int) -> None:
+        await self.session.request("del_schedule", {"id": schedule_id}, confirmed=True)
+
+    # -- settings
+    #
+    # These take the controller, so the session refuses them while a plan runs unless
+    # ``may_pause_plan`` is passed: taking the controller pauses the plan.
+
+    async def set_sound(
+        self, *, enabled: bool, volume: float, may_pause_plan: bool = False
+    ) -> None:
+        """Voice prompts on or off, and their volume from 0.0 to 1.0."""
+        await self.session.request(
+            "set_sound_param",
+            payloads.sound(enabled=enabled, volume=volume),
+            may_pause_plan=may_pause_plan,
+        )
+
+    async def set_person_detection(self, enabled: bool, *, may_pause_plan: bool = False) -> None:
+        await self.session.request(
+            "set_person_detect", {"state": 1 if enabled else 0}, may_pause_plan=may_pause_plan
+        )
+
+    async def set_child_lock(self, enabled: bool, *, may_pause_plan: bool = False) -> None:
+        await self.session.request(
+            "set_child_lock", {"state": bool(enabled)}, may_pause_plan=may_pause_plan
+        )
+
+    async def set_follow_mode(self, enabled: bool, *, may_pause_plan: bool = False) -> None:
+        """The robot does not answer this; ``state.follow_mode`` follows within seconds."""
+        await self.session.send(
+            "set_follow_state", {"state": 1 if enabled else 0}, may_pause_plan=may_pause_plan
+        )
+
+    async def update_global_params(
+        self, *, may_pause_plan: bool = False, **changes: Any
+    ) -> dict[str, Any]:
+        """Change general settings, for example ``recharge_battery=25``.
+
+        The robot stores one record. It is read, the keys the app sends are kept, the
+        changes applied, and the whole record sent back. Returns what was sent.
+        """
+        current = await self.global_params()
+        if not isinstance(current, dict):
+            raise CommandError("read_global_params", 0, "no settings record in the reply")
+        record = payloads.changed_record(
+            current,
+            payloads.APP_GLOBAL_PARAM_KEYS,
+            changes,
+            fixed={"id": payloads.GLOBAL_PARAMS_ID},
+        )
+        await self.session.request(
+            "save_global_params", record, confirmed=True, may_pause_plan=may_pause_plan
+        )
+        return record
+
+    async def update_mower_area_params(self, area_id: int, **changes: Any) -> dict[str, Any]:
+        """Change the mowing settings of one area, for example ``edge_circles=1``.
+
+        A mapping updates the stored mapping: ``first_clean_params={"blade_height": 60}``
+        keeps the other values of the first pass. Returns the record that was sent.
+        """
+        current = await self.mower_area_params(area_id)
+        if current is None:
+            raise ValueError(f"the robot has no area {area_id}")
+        record = payloads.changed_record(
+            current,
+            payloads.APP_MOWER_AREA_KEYS,
+            changes,
+            fixed={"id": area_id, "mapping_module_type": payloads.MAPPING_MODULE_TYPE},
+        )
+        await self.session.request("save_mower_area_params", record, confirmed=True)
+        return record
+
+    # -- the map
+    #
+    # Points are metres from ``reference``, x west and y north, as ``site_map()`` gives
+    # them; ``reference`` is the (latitude, longitude) the map's zones carry as ``ref``.
+    # Without an id the robot creates the object and numbers it; no-go zones, pathways
+    # and sidewalks share one counter. The stored record comes back.
+
+    async def save_nogozone(
+        self,
+        name: str,
+        outline: Iterable[PointLike],
+        reference: RefLike,
+        *,
+        zone_id: int | None = None,
+        enabled: bool = True,
+        may_pause_plan: bool = False,
+    ) -> dict[str, Any]:
+        body = payloads.nogozone(name, outline, reference, zone_id=zone_id, enabled=enabled)
+        return await self._save_map_object("save_nogozone", body, may_pause_plan)
+
+    async def delete_nogozone(self, zone_id: int, *, may_pause_plan: bool = False) -> None:
+        await self.session.request(
+            "del_nogozone", {"id": zone_id}, confirmed=True, may_pause_plan=may_pause_plan
+        )
+
+    async def save_pathway(
+        self,
+        name: str,
+        line: Iterable[PointLike],
+        reference: RefLike,
+        *,
+        pathway_id: int | None = None,
+    ) -> dict[str, Any]:
+        """The robot links a pathway to the dock or an area by where its ends lie."""
+        body = payloads.pathway(name, line, reference, pathway_id=pathway_id)
+        return await self._save_map_object("save_pathway", body, False)
+
+    async def delete_pathway(self, pathway_id: int, *, may_pause_plan: bool = False) -> None:
+        await self.session.request(
+            "del_pathway", {"id": pathway_id}, confirmed=True, may_pause_plan=may_pause_plan
+        )
+
+    async def save_sidewalk(
+        self,
+        name: str,
+        line: Iterable[PointLike],
+        reference: RefLike,
+        *,
+        sidewalk_id: int | None = None,
+        may_pause_plan: bool = False,
+    ) -> dict[str, Any]:
+        body = payloads.sidewalk(name, line, reference, sidewalk_id=sidewalk_id)
+        return await self._save_map_object("save_sidewalk", body, may_pause_plan)
+
+    async def delete_sidewalk(self, sidewalk_id: int, *, may_pause_plan: bool = False) -> None:
+        await self.session.request(
+            "del_sidewalk", {"id": sidewalk_id}, confirmed=True, may_pause_plan=may_pause_plan
+        )
+
+    async def update_area(
+        self,
+        area_id: int,
+        *,
+        name: str | None = None,
+        algorithm_type: int | None = None,
+        outline: Iterable[PointLike] | None = None,
+    ) -> dict[str, Any]:
+        """Edit an area in place and return the stored record.
+
+        ``algorithm_type`` 0 plans rows, 1 a contour spiral, 4 rows with fewer turns.
+        """
+        payload = (await self.session.request("read_all_clean_area", timeout=15.0)).payload
+        items = payload.get("data") if isinstance(payload, dict) else payload
+        current = next(
+            (a for a in items or [] if isinstance(a, dict) and a.get("id") == area_id), None
+        )
+        if current is None:
+            raise ValueError(f"the robot has no area {area_id}")
+        changes: dict[str, Any] = {}
+        if name is not None:
+            changes["name"] = name
+        if algorithm_type is not None:
+            changes["algorithm_type"] = int(algorithm_type)
+        if outline is not None:
+            corners = payloads.points(outline)
+            if len(corners) < 3:
+                raise ValueError("an area needs at least three points")
+            changes["range"] = corners
+        record = payloads.changed_record(
+            current, payloads.APP_AREA_KEYS, changes, fixed={"id": area_id}
+        )
+        return await self._save_map_object("save_clean_area", record, False)
+
+    async def _save_map_object(
+        self, command: str, body: dict[str, Any], may_pause_plan: bool
+    ) -> dict[str, Any]:
+        fb = await self.session.request(
+            command, body, timeout=15.0, confirmed=True, may_pause_plan=may_pause_plan
+        )
+        stored = fb.payload
+        if not isinstance(stored, dict):
+            raise CommandError(command, fb.state, "no stored record in the reply")
+        return dict(stored)
+
+    # -- head and charging
+
+    async def set_blade_height(self, millimetres: int, *, may_pause_plan: bool = False) -> None:
+        """Move the mower deck to a cutting height. The robot does not answer; it took
+        five to seven seconds to move 20 mm."""
+        if millimetres <= 0:
+            raise ValueError("the height is in millimetres, above zero")
+        await self.session.send(
+            "mower_target_cmd", {"target": int(millimetres)}, may_pause_plan=may_pause_plan
+        )
+
+    async def start_charging(self) -> None:
+        """Start charging on the dock. For a robot that docked and did not begin by itself."""
+        await self.session.send("wireless_charging_cmd", {"cmd": 1}, confirmed=True)

@@ -48,6 +48,8 @@ class AreaProgress:
     clean_index: int
     clean_times: int
     path: tuple[Point, ...]
+    # ``type`` on the wire: 0 is the fill of the area, 1 the lap along its edge.
+    path_type: int | None = None
 
     @property
     def done(self) -> tuple[Point, ...]:
@@ -108,6 +110,7 @@ class PlanFeedback:
                 clean_index=_int(item.get("clean_index")) or 0,
                 clean_times=_int(item.get("clean_times")) or 0,
                 path=_points(item.get("path")),
+                path_type=_int(item.get("type")),
             )
             for item in value.get("cleanPathProgress") or []
             if isinstance(item, dict)

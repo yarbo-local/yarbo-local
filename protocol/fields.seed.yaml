@@ -16,9 +16,9 @@ fields:
     device_class: battery
     unit: '%'
     enabled: true
-    notes: Vendor SDK rescales 90..95 to 90..100 because the firmware tops out at 95 on some units; ours reads 100
-      at full.
-    source: vendor SDK
+    notes: Battery percent; reads 100 at full on our robot (the vendor SDK rescales 90..95 for units that top out
+      at 95).
+    source: capture
   BatteryMSG.health:
     entity: sensor
     unit: '%'
@@ -47,8 +47,9 @@ fields:
     enabled: true
     codes: BatteryMSG.status
     notes: 'Vendor rule: > 1 means charging on the wireless dock. Observed 1 at rest, off any charger. No charging
-      capture yet.'
-    source: vendor SDK
+      capture yet. 1 off the charger and while mowing, 3 while charging (it lags StateMSG.charging_status by a few
+      frames).'
+    source: capture
   BatteryMSG.temp_err:
     entity: binary_sensor
     device_class: problem
@@ -112,19 +113,24 @@ fields:
     device_class: enum
     enabled: true
     codes: StateMSG.on_going_planning
-    source: vendor SDK
+    source: capture
+    notes: 0 at rest; 2 calculating the route, 3 on the way to the area, 1 mowing; negative when a start failed
+      (-12 route).
   StateMSG.planning_paused:
     entity: sensor
     device_class: enum
     enabled: true
     codes: StateMSG.planning_paused
-    source: vendor SDK
+    source: capture
+    notes: '0 none; seen: 1 manual pause (also after get_controller during a plan), 4 the physical stop button,
+      7 with fault 902, 9 rain.'
   StateMSG.on_going_recharging:
     entity: sensor
     device_class: enum
     enabled: true
     codes: StateMSG.on_going_recharging
-    source: vendor SDK
+    source: capture
+    notes: 0 none; going home it read 2, 1, 3 in turn and 4 once on the dock.
   StateMSG.on_going_to_start_point:
     entity: binary_sensor
     enabled: false
@@ -133,15 +139,17 @@ fields:
     entity: sensor
     enabled: true
     codes: StateMSG.error_code
-    notes: 0 is no fault. The robot sends only the number; codes.yaml lists the ones whose app text has been seen (902 tilted or flipped over).
-    source: vendor SDK; 902 observed 2026-09-15
+    notes: 0 is no fault. The robot sends only the number; codes.yaml lists the ones whose app text has been seen
+      (902 tilted or flipped over). 0 none; 902 seen with the robot tilted.
+    source: capture
   StateMSG.charging_status:
     entity: binary_sensor
     device_class: battery_charging
     enabled: true
     notes: 'Community rule: 1..3 charging. Observed 0 at rest, off any charger, which agrees. No charging capture
-      yet.'
-    source: community
+      yet. 2 while current flows into the pack; 0, 1 and 6 were all seen with it discharging (6 on the dock before
+      charging starts).'
+    source: capture
   StateMSG.machine_controller:
     entity: sensor
     enabled: false
@@ -152,23 +160,24 @@ fields:
     entity: binary_sensor
     enabled: false
     category: diagnostic
-    notes: Manual controller (gamepad) active.
-    source: community
+    notes: Manual controller (gamepad) active. True while a plan drives the robot, false at rest and while paused;
+      it does not show who holds the controller.
+    source: capture
   StateMSG.person_detect_status:
     entity: switch
     enabled: true
-    notes: Read-back for set_person_detect.
-    source: vendor SDK
+    notes: Read-back for set_person_detect. Follows set_person_detect within 4 s.
+    source: capture
   StateMSG.child_lock_status:
     entity: switch
     enabled: true
-    notes: Read-back for set_child_lock.
-    source: vendor SDK
+    notes: Read-back for set_child_lock. Follows set_child_lock.
+    source: capture
   StateMSG.enable_sound:
     entity: switch
     enabled: true
-    notes: Read-back for set_sound_param.enable.
-    source: vendor SDK
+    notes: Read-back for set_sound_param.enable. Follows set_sound_param enable.
+    source: capture
   StateMSG.volume:
     entity: number
     unit: '%'
@@ -179,8 +188,8 @@ fields:
   StateMSG.robot_follow_state:
     entity: switch
     enabled: false
-    notes: Read-back for set_follow_state.
-    source: vendor SDK
+    notes: Read-back for set_follow_state. Follows set_follow_state within 4 s.
+    source: capture
   StateMSG.stuck:
     entity: binary_sensor
     device_class: problem
@@ -308,14 +317,16 @@ fields:
     entity: sensor
     unit: m
     enabled: false
-    notes: Site frame, +x west per vendor conversion. Frame not yet verified by movement.
-    source: vendor SDK
+    notes: Site frame, +x west per vendor conversion. Frame not yet verified by movement. Map frame, metres from
+      the zone reference; x points west (checked against the RTK fix).
+    source: capture
   CombinedOdom.y:
     entity: sensor
     unit: m
     enabled: false
-    notes: Site frame, +y north.
-    source: vendor SDK
+    notes: Site frame, +y north. Map frame, metres from the zone reference; y points north (checked against the
+      RTK fix).
+    source: capture
   CombinedOdom.phi:
     entity: sensor
     unit: rad
@@ -330,8 +341,9 @@ fields:
   rtk_base_data.rover.gngga:
     entity: device_tracker
     enabled: true
-    notes: NMEA GGA; lat/lon, fix quality (4 RTK fixed, 5 float), satellites, HDOP, altitude.
-    source: community
+    notes: NMEA GGA; lat/lon, fix quality (4 RTK fixed, 5 float), satellites, HDOP, altitude. The rover's GGA sentence;
+      agrees with the map frame to 0.2 m RMS.
+    source: capture
   rtk_base_data.base.gngga:
     entity: null
     notes: Base station GGA; fix quality 7 observed (fixed/manual position).
@@ -353,7 +365,8 @@ fields:
     device_class: enum
     enabled: true
     codes: HeadMsg.head_type
-    source: vendor SDK
+    source: capture
+    notes: 5 with the Lawn Mower Pro attached.
   HeadSerialMsg.head_sn:
     entity: sensor
     enabled: false
@@ -372,8 +385,9 @@ fields:
   version:
     entity: update
     enabled: true
-    notes: Main firmware. Drives the zlib rule (>= 3.9.0). 3.14.11 observed.
-    source: vendor SDK
+    notes: Main firmware. Drives the zlib rule (>= 3.9.0). 3.14.11 observed. Firmware version string, 3.14.11 on
+      our robot.
+    source: capture
   ble_version:
     entity: sensor
     enabled: false
@@ -405,7 +419,9 @@ fields:
     entity: binary_sensor
     device_class: safety
     enabled: true
-    source: community
+    source: capture
+    notes: 0 at rest; 1 when the physical stop button was pressed (pause code 4), 3 three seconds later, 0 once
+      the button had been pulled out (2026-09-15).
   BodyMsg.external_button_state:
     entity: binary_sensor
     enabled: false
@@ -561,13 +577,16 @@ fields:
     unit: m/s
     enabled: false
     category: diagnostic
-    source: briangann
+    source: capture
+    notes: Metres per second; 0.25 to 0.5 while the robot covered 0.3 to 0.45 m/s, negative in reverse, 0 while
+      it waits.
   WheelSpeedMSG.right:
     entity: sensor
     unit: m/s
     enabled: false
     category: diagnostic
-    source: briangann
+    source: capture
+    notes: Metres per second; see WheelSpeedMSG.left.
   WheelSpeedMSG.dist_left:
     entity: sensor
     device_class: distance
@@ -666,7 +685,8 @@ fields:
     entity: sensor
     enabled: false
     category: diagnostic
-    source: community
+    source: capture
+    notes: 0 on the dock before charging, 2 once charging has started.
   wireless_recharge.error_code:
     entity: sensor
     enabled: false

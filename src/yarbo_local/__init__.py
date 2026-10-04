@@ -7,6 +7,7 @@ The library talks to the anonymous broker on the robot and to nothing else.
 
 from __future__ import annotations
 
+from . import payloads
 from .blackbox import FlightRecorder
 from .client import YarboRobot
 from .exceptions import (
@@ -14,6 +15,7 @@ from .exceptions import (
     CommandRefusedError,
     ConnectionLostError,
     ControllerError,
+    PlanRunningError,
     PlanStartError,
     PreflightError,
     ReplyTimeoutError,
@@ -32,6 +34,7 @@ from .models import (
     PlanError,
     PlanSummary,
     RobotState,
+    Schedule,
     SiteMap,
     Zone,
 )
@@ -72,6 +75,7 @@ __all__ = [
     "Phase",
     "PlanError",
     "PlanFeedback",
+    "PlanRunningError",
     "PlanStartError",
     "PlanSummary",
     "PlanTracker",
@@ -83,11 +87,13 @@ __all__ = [
     "RobotNotFoundError",
     "RobotState",
     "Run",
+    "Schedule",
     "Session",
     "Simulator",
     "SiteMap",
     "YarboError",
     "YarboRobot",
     "Zone",
+    "payloads",
     "resolve",
 ]

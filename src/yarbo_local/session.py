@@ -28,6 +28,7 @@ from .exceptions import (
     CommandRefusedError,
     ConnectionLostError,
     ControllerError,
+    PlanRunningError,
     ReplyTimeoutError,
 )
 from .models import Feedback, Heartbeat, RobotState
@@ -315,21 +316,36 @@ class Session:
             name, allow_candidates=self.allow_candidates, confirmed=confirmed
         )
 
-    async def _prepare(self, cmd: Command) -> None:
+    async def _prepare(self, cmd: Command, *, may_pause_plan: bool = False) -> None:
         head = self.state.head_type
         if cmd.heads and head is not None and head not in cmd.heads:
             raise CommandRefusedError(
                 f"{cmd.name!r} needs head {list(cmd.heads)}, attached is {head}"
+            )
+        needs_controller = bool(cmd.controller) and not self._controller_held
+        # Taking the controller during a plan pauses the plan, so refuse before anything
+        # is sent, the wake-up included.
+        if needs_controller and self.state.plan_running and not may_pause_plan:
+            raise PlanRunningError(
+                f"{cmd.name!r} needs the controller, and taking it would pause the "
+                "running plan; send it when the plan has ended, or pass may_pause_plan=True"
             )
         if cmd.awake and self.state.awake is False:
             await self.wake()
         if cmd.controller and not self._controller_held:
             await self.ensure_controller()
 
-    async def send(self, name: str, payload: Any = None, *, confirmed: bool = False) -> None:
+    async def send(
+        self,
+        name: str,
+        payload: Any = None,
+        *,
+        confirmed: bool = False,
+        may_pause_plan: bool = False,
+    ) -> None:
         """Fire-and-forget publish through the registry rules."""
         cmd = self._check(name, confirmed)
-        await self._prepare(cmd)
+        await self._prepare(cmd, may_pause_plan=may_pause_plan)
         await self._publish(name, cmd.payload if payload is None else payload)
 
     async def request(
@@ -339,6 +355,7 @@ class Session:
         *,
         timeout: float = 8.0,
         confirmed: bool = False,
+        may_pause_plan: bool = False,
     ) -> Feedback:
         """Publish and wait for the correlated ``data_feedback`` reply.
 
@@ -350,7 +367,7 @@ class Session:
         cmd = self._check(name, confirmed)
         if not cmd.expects_reply:
             raise CommandRefusedError(f"{name!r} does not reply on data_feedback; use send()")
-        await self._prepare(cmd)
+        await self._prepare(cmd, may_pause_plan=may_pause_plan)
         body = cmd.payload if payload is None else payload
         guessed = self._known_encoding() is None
         try:

@@ -295,3 +295,88 @@ def test_fault_wording() -> None:
     assert base.pause_reason == "stuck"
     odd, _ = base.with_frame({"StateMSG": {"planning_paused": 42}}, 2.0)
     assert odd.pause_reason == "unknown"
+
+
+def _frame(x: float, y: float, **state: int) -> dict:  # type: ignore[type-arg]
+    return {"CombinedOdom": {"x": x, "y": y, "phi": 0.0}, "StateMSG": state}
+
+
+def test_a_running_plan_that_does_not_move_is_waiting() -> None:
+    """As with the car on the pathway: planning 3, no pause code, no error, standing still."""
+    state = RobotState()
+    state, _ = state.with_frame(_frame(0.0, 0.0, on_going_planning=3), 100.0)
+    assert not state.waiting
+    state, _ = state.with_frame(_frame(5.0, 0.0, on_going_planning=3), 110.0)
+    for at in (120.0, 150.0, 169.0):
+        state, _ = state.with_frame(_frame(5.2, 0.1, on_going_planning=3), at)
+    assert state.still_seconds == 59.0
+    assert not state.waiting, "under a minute is a turn or a short stop"
+    state, changed = state.with_frame(_frame(5.2, 0.1, on_going_planning=3), 171.0)
+    assert state.waiting
+    assert changed, "listeners hear about it even though the frame itself is the same"
+    assert state.activity is Activity.WAITING
+
+    crept, _ = state.with_frame(_frame(5.8, 0.1, on_going_planning=3), 200.0)
+    assert crept.waiting, "a creep of under a metre is still waiting"
+    moved, changed = state.with_frame(_frame(7.0, 0.1, on_going_planning=3), 200.0)
+    assert not moved.waiting
+    assert changed
+    assert moved.activity is Activity.HEADING_TO_AREA
+
+
+def test_waiting_needs_a_running_plan_without_a_pause_code() -> None:
+    def still(**codes: int) -> RobotState:
+        state, _ = RobotState().with_frame(_frame(1.0, 1.0, **codes), 0.0)
+        state, _ = state.with_frame(_frame(1.0, 1.0, **codes), 120.0)
+        return state
+
+    assert still(on_going_planning=1).waiting
+    # Hours on the dock, then a start: stillness counts only from when the plan drives.
+    parked, _ = RobotState().with_frame(_frame(1.0, 1.0, on_going_planning=0), 0.0)
+    parked, _ = parked.with_frame(_frame(1.0, 1.0, on_going_planning=0), 7200.0)
+    started, _ = parked.with_frame(_frame(1.0, 1.0, on_going_planning=3), 7201.0)
+    assert not started.waiting
+    assert started.still_seconds == 1.0
+    resumed, _ = still(on_going_planning=0, planning_paused=1).with_frame(
+        _frame(1.0, 1.0, on_going_planning=3, planning_paused=0), 121.0
+    )
+    assert not resumed.waiting, "a resume starts the clock again"
+    assert not still(on_going_planning=0).waiting, "at rest on the dock"
+    assert not still(on_going_planning=0, planning_paused=1).waiting, "paused says why"
+    assert not still(on_going_planning=2).waiting, "calculating the route"
+    assert RobotState().still_seconds is None
+
+
+def test_stop_button() -> None:
+    """2026-09-15: 1 at the press, 3 three seconds later, 0 once it was pulled out."""
+    assert RobotState().stop_button_engaged is None
+
+    def button(value: int) -> RobotState:
+        return RobotState().with_frame({"BodyMsg": {"body_stop_button_state": value}}, 0.0)[0]
+
+    assert button(0).stop_button_engaged is False
+    assert button(1).stop_button_engaged is True
+    assert button(3).stop_button_engaged is True
+    assert button(3).stop_button_state == 3
+
+
+def test_the_real_blocked_pathway_reads_as_waiting() -> None:
+    """2026-10-04: a car stood on the pathway. The plan said running; the robot stood still."""
+    state = RobotState()
+    started = None
+    waiting_at = None
+    for line in (FIXTURES / "pathway-blocked-waiting.jsonl").read_text().splitlines():
+        record = json.loads(line)
+        if not record["topic"].endswith("/DeviceMSG"):
+            continue
+        started = started or record["t"]
+        state, _ = state.with_frame(record["payload"], record["t"])
+        if state.waiting and waiting_at is None:
+            waiting_at = record["t"] - started
+    assert state.planning_code == 3
+    assert state.paused_code == 0
+    assert state.error_code == 0, "the robot itself reports nothing wrong"
+    assert state.waiting
+    assert state.activity is Activity.WAITING
+    assert waiting_at is not None
+    assert 100 < waiting_at < 125, "it drove for about a minute, then stood for a minute"

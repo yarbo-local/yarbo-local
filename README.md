@@ -2,7 +2,7 @@
 
 Local-first tooling and, later, the asyncio library behind a Home Assistant integration for Yarbo robots. It talks to the anonymous MQTT broker the robot runs on your LAN and to nothing else. No Yarbo account, no vendor servers, no telemetry.
 
-Status: **pre-alpha.** Phase 0 validated the protocol on real hardware (firmware 3.14.11) and produced the knowledge base in `protocol/`: 55 commands verified with captures, the rest marked as candidates that cannot be sent. The library core is in place: a registry-gated session, typed state, the map, plan control (start, pause, resume, stop, return to dock), the map and its objects, plans and schedules, and the robot's settings, each verified against the robot, a fixture-driven simulator and a small client. It is on PyPI as `yarbo-local`. The Home Assistant integration ([yarbo-local-ha](https://github.com/yarbo-local/yarbo-local-ha)) shows and controls the robot, and carries its own map card, which draws the map, the robot and plan progress.
+Status: **pre-alpha.** Phase 0 validated the protocol on real hardware (firmware 3.14.11) and produced the knowledge base in `protocol/`: 57 commands verified with captures, the rest marked as candidates that cannot be sent. The library core is in place: a registry-gated session, typed state, the map, plan control (start, pause, resume, stop, return to dock), the map and its objects, plans and schedules, and the robot's settings, each verified against the robot, a fixture-driven simulator and a small client. It is on PyPI as `yarbo-local`. The Home Assistant integration ([yarbo-local-ha](https://github.com/yarbo-local/yarbo-local-ha)) shows and controls the robot, and carries its own map card, which draws the map, the robot and plan progress.
 
 ## What is here
 
@@ -61,12 +61,36 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
+Changing things is typed too. Each of these was sent to a real robot and read back:
+
+```python
+async with YarboRobot.for_host("192.168.50.184") as robot:
+    await robot.start_plan(1)                     # the app's sequence; waits for the robot's verdict
+    await robot.pause(); await robot.resume(); await robot.stop(); await robot.dock()
+
+    route = await robot.preview_route(1)          # the route for a plan, without moving the robot
+    plan_id = await robot.save_plan("Front and back", [4, 9])
+    await robot.save_schedule(plan_id=plan_id, name="Monday", week_day=1,
+                              start_time="10:00:00", end_time="12:00:00")
+    await robot.update_mower_area_params(4, first_clean_params={"blade_height": 60})
+    await robot.update_global_params(recharge_battery=25)
+    await robot.set_sound(enabled=True, volume=0.5)
+
+    site = await robot.site_map()                 # zones in metres from their reference
+    area = site.areas[0]
+    zone = await robot.save_nogozone("Flower bed", [(1, 1), (3, 1), (3, 3)], area.ref)
+    await robot.delete_nogozone(zone["id"])
+```
+
+`robot.state` also says what the robot does not: `state.waiting` is a plan that reports itself running while the robot has stood still for a minute (a blocked pathway looks like this, with no error and no pause code), and `state.stop_button_engaged` is the physical stop button.
+
 Rules the session enforces, on purpose:
 
 - Only commands in `protocol/commands.yaml` can be sent. Names in its `forbidden` section are not entries and can never be sent, with or without flags.
 - A command whose status is `candidate` is refused unless the session was opened with `allow_candidates=True`. The Home Assistant integration never does that; the Studio does.
 - A command with `risk: confirm` needs `confirmed=True` on the call.
-- The wake command and the controller role are used only when the command's flags say they are needed, and the controller is itself still a candidate.
+- The wake command and the controller role are used only when the command's flags say they are needed.
+- Taking the controller pauses a running plan, so a command that needs it is refused while a plan runs (`PlanRunningError`) unless the call passes `may_pause_plan=True`. Starting, pausing, resuming and stopping a plan never take it.
 - Outbound encoding follows the robot's firmware, or what it has been seen sending, so a robot on 3.9 or later never silently drops a plaintext command.
 - The connection loop never returns on a dropped broker; it backs off with jitter and reconnects.
 

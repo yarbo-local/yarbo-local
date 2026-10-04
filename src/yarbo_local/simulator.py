@@ -84,6 +84,11 @@ class Simulator:
     now: Any = time.monotonic
     _transport: Transport | None = None
     log: list[tuple[str, Any]] = field(default_factory=list)
+    schedules: list[dict[str, Any]] = field(default_factory=list)
+    global_params: dict[str, Any] = field(default_factory=dict)
+    mower_area_params: dict[int, dict[str, Any]] = field(default_factory=dict)
+    # No-go zones, pathways and sidewalks are numbered from one shared counter.
+    next_object_id: int = 20
 
     @classmethod
     def from_fixture(cls, fixture: Path, *, map_fixture: Path | None = None) -> Simulator:
@@ -284,7 +289,7 @@ class Simulator:
                 "read_global_params",
                 0,
                 "",
-                {"id": 0, "plan_speed": 0.6, "enable_elec_fence": False},
+                {"id": 0, "plan_speed": 0.6, "enable_elec_fence": False, **self.global_params},
             )
         else:
             self._feedback(
@@ -295,7 +300,200 @@ class Simulator:
             )
 
     def cmd_read_schedules(self, value: Any) -> None:
-        self._feedback("read_schedules", 0, "", [])
+        self._feedback("read_schedules", 0, "", list(self.schedules))
+
+    # -- writes (replies as seen on 3.14.11)
+
+    def cmd_save_plan(self, value: Any) -> None:
+        """Without an id the robot numbers the plan itself; the reply does not carry it."""
+        plan = dict(value) if isinstance(value, dict) else {}
+        if "id" not in plan:
+            plan["id"] = max((int(p.get("id", 0)) for p in self.plans), default=0) + 1
+        self.plans = [p for p in self.plans if p.get("id") != plan["id"]] + [plan]
+        self._feedback("save_plan", 0, "The plan was saved successfully.", "")
+
+    def cmd_del_plan(self, value: Any) -> None:
+        """Deleting a plan deletes the schedules that use it."""
+        wanted = value.get("id") if isinstance(value, dict) else None
+        self.plans = [p for p in self.plans if p.get("id") != wanted]
+        self.schedules = [s for s in self.schedules if s.get("plan_id") != wanted]
+        self._feedback("del_plan", 0, "Plan deleted successfully.", "")
+
+    def cmd_sort_plan(self, value: Any) -> None:
+        order = list(value.get("ids") or []) if isinstance(value, dict) else []
+        by_id = {p.get("id"): p for p in self.plans}
+        self.plans = [by_id[i] for i in order if i in by_id] + [
+            p for p in self.plans if p.get("id") not in order
+        ]
+        self._feedback("sort_plan", 0, "The plans have been sorted successfully.", "")
+
+    def cmd_save_schedule(self, value: Any) -> None:
+        """The reply is the stored record: what was sent plus the robot's own fields."""
+        sent = dict(value) if isinstance(value, dict) else {}
+        stored = {
+            "completed_this_window": False,
+            "interval_time": 0,
+            "is_weather_schedule": 0,
+            "times": 0,
+            "timezone": "",
+            **sent,
+        }
+        self.schedules = [s for s in self.schedules if s.get("id") != stored.get("id")]
+        self.schedules.append(stored)
+        self._feedback("save_schedule", 0, "", stored)
+
+    def cmd_del_schedule(self, value: Any) -> None:
+        wanted = value.get("id") if isinstance(value, dict) else None
+        self.schedules = [s for s in self.schedules if s.get("id") != wanted]
+        self._feedback("del_schedule", 0, "Schedule deleted successfully.", "")
+
+    def cmd_set_sound_param(self, value: Any) -> None:
+        if isinstance(value, dict):
+            self._set_state(enable_sound=bool(value.get("enable")), volume=value.get("vol"))
+        self._feedback("set_sound_param", 0, "Sound settings updated successfully.", "")
+
+    def cmd_set_person_detect(self, value: Any) -> None:
+        """The message says 'enabled' for both values, as on the real robot."""
+        if isinstance(value, dict):
+            self._set_state(person_detect_status=int(value.get("state") or 0))
+        self._feedback("set_person_detect", 0, "Person detection enabled successfully.", "")
+
+    def cmd_set_child_lock(self, value: Any) -> None:
+        on = bool(value.get("state")) if isinstance(value, dict) else False
+        self._set_state(child_lock_status=int(on))
+        word = "enabled" if on else "disabled"
+        self._feedback("set_child_lock", 0, f"set_child_lock success: {word}", "")
+
+    def cmd_set_follow_state(self, value: Any) -> None:
+        if isinstance(value, dict):
+            self._set_state(robot_follow_state=int(value.get("state") or 0))
+
+    def cmd_save_global_params(self, value: Any) -> None:
+        sent = dict(value) if isinstance(value, dict) else {}
+        changed = any(self.global_params.get(k) != v for k, v in sent.items() if k != "id")
+        self.global_params = {**self.global_params, **{k: v for k, v in sent.items() if k != "id"}}
+        msg = (
+            "Global parameters updated successfully."
+            if changed
+            else "No changes detected, parameters unchanged."
+        )
+        self._feedback("save_global_params", 0, msg, "")
+
+    def cmd_read_mower_area_params(self, value: Any) -> None:
+        wanted = value.get("id") if isinstance(value, dict) else None
+        stored = self.mower_area_params.get(wanted) if isinstance(wanted, int) else None
+        self._feedback(
+            "read_mower_area_params",
+            0,
+            "Mower area settings loaded successfully.",
+            {**(stored or MOWER_AREA_PARAMS_DEFAULT), "id": wanted if stored else 0},
+        )
+
+    def cmd_save_mower_area_params(self, value: Any) -> None:
+        sent = dict(value) if isinstance(value, dict) else {}
+        area_id = sent.get("id")
+        if isinstance(area_id, int):
+            kept = {k: v for k, v in sent.items() if k != "mapping_module_type"}
+            self.mower_area_params[area_id] = {
+                **self.mower_area_params.get(area_id, MOWER_AREA_PARAMS_DEFAULT),
+                **kept,
+            }
+        self._feedback("save_mower_area_params", 0, "", "")
+
+    def _store_object(self, command: str, family: str, value: Any, extra: dict[str, Any]) -> None:
+        record = dict(value) if isinstance(value, dict) else {}
+        if "id" not in record:
+            record["id"] = self.next_object_id
+            self.next_object_id += 1
+        stored = {**extra, **record}
+        records = [r for r in self.site_map.get(family) or [] if r.get("id") != stored["id"]]
+        self.site_map = {**self.site_map, family: [*records, stored]}
+        self._feedback(command, 0, "", stored)
+
+    def _delete_object(self, command: str, family: str, value: Any, msg: str) -> None:
+        wanted = value.get("id") if isinstance(value, dict) else None
+        records = [r for r in self.site_map.get(family) or [] if r.get("id") != wanted]
+        self.site_map = {**self.site_map, family: records}
+        self._feedback(command, 0, msg, "")
+
+    def cmd_save_nogozone(self, value: Any) -> None:
+        self._store_object("save_nogozone", "nogozones", value, {"area_id": -1})
+
+    def cmd_del_nogozone(self, value: Any) -> None:
+        self._delete_object("del_nogozone", "nogozones", value, "NoGoZone deleted successfully.")
+
+    def cmd_save_pathway(self, value: Any) -> None:
+        self._store_object("save_pathway", "pathways", value, {"start_id": 0, "end_id": 0})
+
+    def cmd_del_pathway(self, value: Any) -> None:
+        self._delete_object("del_pathway", "pathways", value, "Pathway deleted successfully.")
+
+    def cmd_save_sidewalk(self, value: Any) -> None:
+        self._store_object("save_sidewalk", "sidewalks", value, {"start_id": 0, "end_id": 0})
+
+    def cmd_del_sidewalk(self, value: Any) -> None:
+        self._delete_object("del_sidewalk", "sidewalks", value, "Sidewalk deleted successfully.")
+
+    def cmd_save_clean_area(self, value: Any) -> None:
+        """With an id the area is edited in place and the stored record comes back."""
+        record = dict(value) if isinstance(value, dict) else {}
+        current: dict[str, Any] = next(
+            (a for a in self.site_map.get("areas") or [] if a.get("id") == record.get("id")), {}
+        )
+        self._store_object("save_clean_area", "areas", {**current, **record}, {})
+
+    def cmd_preview_plan_path(self, value: Any) -> None:
+        """Shaped like plan_feedback: a fill path and an edge lap per area."""
+        wanted = value.get("id") if isinstance(value, dict) else None
+        plan = next((p for p in self.plans if p.get("id") == wanted), None)
+        if plan is None:
+            self._feedback("preview_plan_path", -1, "plan not found", "")
+            return
+        areas = list(plan.get("areaIds") or [])
+        paths = [
+            {
+                "clean_index": 0,
+                "clean_times": 0,
+                "id": area,
+                "type": kind,
+                "path_slope": [],
+                "path": [{"x": 0.0, "y": 0.0}, {"x": 1.0, "y": 0.0}, {"x": 1.0, "y": 1.0}],
+            }
+            for area in areas
+            for kind in (0, 1)
+        ]
+        self._feedback(
+            "preview_plan_path",
+            0,
+            "",
+            {
+                "planId": wanted,
+                "areaIds": areas,
+                "cleanAreaId": -1,
+                "cleanPathProgress": paths,
+                "finishIds": [],
+                "state": 0,
+                "startTime": 0,
+                "duration": 0,
+                "actualCleanArea": 0.0,
+                "finishCleanArea": 0.0,
+                "totalCleanArea": 0.0,
+                "leftTime": 600.0,
+                "totalTime": 600.0,
+            },
+        )
+
+    def cmd_mower_target_cmd(self, value: Any) -> None:
+        """No reply; the lift motor goes to the target."""
+        if isinstance(value, dict) and "target" in value:
+            head = dict(self.snapshot.get("mower_head_info01") or {})
+            head["lift_motor_place"] = value["target"]
+            self.snapshot = {**self.snapshot, "mower_head_info01": head}
+
+    def cmd_wireless_charging_cmd(self, value: Any) -> None:
+        """No reply; cmd 1 on the dock starts charging."""
+        if isinstance(value, dict) and value.get("cmd") == 1:
+            self._set_state(charging_status=2)
 
     def cmd_read_recharge_point(self, value: Any) -> None:
         self._feedback("read_recharge_point", 0, "", snapshot_dock())
@@ -332,6 +530,18 @@ class Simulator:
         self.site_map = {**self.site_map, family: records}
         self._feedback(command, 0, "", "")
 
+
+MOWER_AREA_PARAMS_DEFAULT: dict[str, Any] = {
+    "clean_times": 1,
+    "clean_times_dis": 0.0,
+    "current_blade_height": 0,
+    "edge_circles": 2,
+    "edge_direction_mode": 0,
+    "gap": 0.3,
+    "route_order": 0,
+    "first_clean_params": {"blade_height": 50, "blade_speed": 80, "plan_speed": 0.5},
+    "double_clean_params": {"blade_height": 0, "blade_speed": 80, "plan_speed": 0.5},
+}
 
 AREA_PARAMS_DEFAULT: dict[str, Any] = {
     "clean_times": 1,
