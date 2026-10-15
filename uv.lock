@@ -748,7 +748,7 @@ wheels = [
 
 [[package]]
 name = "yarbo-local"
-version = "0.1.0.dev2"
+version = "0.1.0.dev3"
 source = { editable = "." }
 dependencies = [
     { name = "aiomqtt" },

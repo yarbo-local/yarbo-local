@@ -46,7 +46,7 @@ from .session import Session
 from .simulator import Simulator
 from .transport import FakeBroker, FakeTransport, MqttTransport
 
-__version__ = "0.1.0.dev2"
+__version__ = "0.1.0.dev3"
 
 __all__ = [
     "Action",
