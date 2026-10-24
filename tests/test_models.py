@@ -280,6 +280,22 @@ def test_fault_902_from_the_real_tilt() -> None:
     assert seen[-1] == (0, None, None)
 
 
+def test_blade_blocked_pause_from_the_real_run() -> None:
+    """2026-10-24: the app said the right cutting blade was blocked (RC006); code 10."""
+    state = RobotState()
+    reasons: list[str | None] = []
+    for line in (FIXTURES / "mower-pro-blade-blocked-pause-10.jsonl").read_text().splitlines():
+        rec = json.loads(line)
+        if not rec["topic"].endswith("/device/DeviceMSG"):
+            continue
+        state, _ = state.with_frame(rec["payload"], rec["t"])
+        reasons.append(state.pause_reason)
+    assert reasons[0] is None
+    assert reasons[-1] == "blade_blocked"
+    assert state.error_code == 0, "a blocked blade is a pause reason, not a fault"
+    assert state.fault is None
+
+
 def test_fault_wording() -> None:
     assert Fault.from_code(0) is None
     tilted = Fault.from_code(902)

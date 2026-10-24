@@ -23,7 +23,7 @@ StateMSG.planning_paused:
   1: manual             # seen after app/pause (2026-09-18)
   2: low_battery_recharging
   3: power_restart
-  4: emergency_stop
+  4: emergency_stop     # seen when the physical stop button was pressed (2026-09-15, 2026-10-04)
   5: bumper
   6: stuck
   7: fault              # seen on the wire with StateMSG.error_code 902 (2026-09-15)
@@ -34,6 +34,15 @@ StateMSG.planning_paused:
                         # and no data_feedback came for start_plan. The app showed
                         # "Rain detected". RTK was fixed (status 4, ~30 satellites). The app
                         # then sent clear_plan_state {"state": 9}; the robot stayed paused 9.
+  10: blade_blocked     # 2026-10-24, fw 3.14.11, Mower Pro, East Lawn plan at 17.5%. The app:
+                        # "right cutting blade motor is blocked. Please inspect and clear any
+                        # blockages in the Cutting Disc (RC006)". In the minute before,
+                        # mower_head_info04.right_blade_motor_err went 32 eight times (once 2,
+                        # with right_blade_motor_over_current_info 1) while the blade restarted
+                        # and its temperature rose 68 -> 75; the robot stood still. Then
+                        # on_going_planning 1->0, planning_paused 0->10, on_going_recharging
+                        # 0->1: it drove back to the dock and charged, the plan held at 10.
+                        # Which disc is blocked is in the app's RC code, not in this field.
 
 StateMSG.error_code:
   # The robot sends only the number; the Yarbo app owns the wording. A code is listed

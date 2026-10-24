@@ -230,3 +230,14 @@ The owner stood beside the robot for the sound and light candidates, then a run 
 - **Typed writes.** Plans, schedules, sound, person detection, child lock, follow mode, general settings, an area's mowing settings, no-go zones, pathways, sidewalks, areas, the route preview, blade height and start-charging have methods on `YarboRobot`; their payloads are compared with the recorded ones in the tests. Run against the robot on its dock at 14:02: both route previews (East 117 fill and 67 edge points, estimate 3937 s; west 465 and 42, 6990 s), both whole-record saves sent unchanged and read back identical (31 and 56 keys), a plan created as id 3 with a disabled schedule and deleted again with its schedule, a no-go zone created as id 20 and deleted, pathway links intact afterwards.
 - **Promoted.** `light_ctrl` and `song_cmd` are verified (57 commands). `cmd_buzzer`, `mower_speed_cmd`, `emergency_stop_active` and `emergency_unlock` carry `outcome: no_effect`: sent on hardware, changed nothing. Pending and needing the owner or the right conditions: `smart_vision_control`, `set_map_obstacle_switch`, `clear_plan_state`, `shutdown`, `cmd_set_chute_angle`. 21 more DeviceMSG fields are confirmed (71 of 429).
 
+
+## 24. A blocked blade stops the plan with pause code 10 (2026-10-24)
+
+The East Lawn plan was started from Home Assistant to see how the robot treats six newly planted trees with barriers around them. At 17.5% the robot stopped mowing, drove back to the dock and charged, holding the plan with `planning_paused` **10**. The app said: "right cutting blade motor is blocked. Please inspect and clear any blockages in the Cutting Disc (RC006)".
+
+- **What led up to it.** In the 70 s before, `mower_head_info03.left_blade_motor_err` was 1 once (with `left_blade_motor_over_current_info` 2), then `mower_head_info04.right_blade_motor_err` went to 32 eight times and once to 2 (with `right_blade_motor_over_current_info` 1). Each time the blade speed dropped to 0 and came back to 80, and the right motor's temperature climbed from 68 to 75. For the last 40 s the robot stood still. Then `on_going_planning` went 1 to 0, `planning_paused` 0 to 10 and `on_going_recharging` 0 to 1. No `error_code` came; it is a pause reason, not a fault.
+- **Which disc** is in the app's RC code only. The pause code does not say.
+- **The blade error flags** (`*_blade_motor_err`, `*_blade_motor_over_current_info`, next to the blade fields of section 15) were 0 for the rest of the run. 32 and 2 are the only non-zero values seen, both on the blocked disc.
+- **Obstacles.** Before the stop the robot reported two obstacles in `tmp_barrier_points`, both under a metre across, in the north corner of the lawn. One object arrives as several overlapping clusters (one was 7 clusters within 0.8 m), so counting merged clusters overstates the number of objects.
+
+The library names code 10 `blade_blocked`. Fixture: `mower-pro-blade-blocked-pause-10.jsonl`.

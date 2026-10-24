@@ -48,9 +48,11 @@ UNIDENTIFIED_FAULT_HINT = "This code is not identified yet. The Yarbo app shows 
 
 CHARGING_STATUS_CHARGING = 2  # StateMSG.charging_status while current flows into the pack
 
-# StateMSG.planning_paused. 1 was seen after a pause from the app, 7 together with
-# fault 902, and 9 when the rain sensor stopped a start (the app said "Rain detected").
-# The rest come from the vendor SDK and are unconfirmed.
+# StateMSG.planning_paused. 1 was seen after a pause from the app, 4 when the stop button
+# was pressed, 7 together with fault 902, 9 when the rain sensor stopped a start (the app
+# said "Rain detected"), and 10 when a cutting blade was blocked (the app said "right
+# cutting blade motor is blocked", RC006; the robot went back to the dock). The rest come
+# from the vendor SDK and are unconfirmed.
 PAUSE_REASONS = {
     1: "manual",
     2: "low_battery_recharging",
@@ -60,6 +62,7 @@ PAUSE_REASONS = {
     6: "stuck",
     7: "fault",
     9: "rain",
+    10: "blade_blocked",
 }
 
 
