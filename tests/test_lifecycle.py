@@ -390,3 +390,33 @@ def test_our_stop_while_mowing_ends_the_run_with_no_pause_in_between() -> None:
     assert Activity.WORKING in activities
     assert Activity.PAUSED not in activities
     assert activities[-1] is Activity.IDLE
+
+
+def test_a_blocked_blade_sends_the_robot_home_with_the_plan_still_paused() -> None:
+    """2026-10-24: code 10 at 17.5%; the robot drove home and charged, holding the plan."""
+    tracker = _running(progress_area=17.5)
+    events = tracker.on_state(
+        state_of(on_going_planning=0, planning_paused=10, on_going_recharging=1), 10.0
+    )
+    assert [(e.kind, e.reason) for e in events] == [(EventKind.PAUSED, "blade_blocked")]
+    run = tracker.current
+    assert run is not None
+    assert run.phase is Phase.PAUSED, "not a recharge: it will not resume by itself"
+    assert run.went_home
+    charging = state_of(
+        on_going_planning=0, planning_paused=10, on_going_recharging=4, battery_status=3
+    )
+    assert tracker.on_state(charging, 300.0) == [], "home with the pause held is not an end"
+    assert tracker.current.phase is Phase.PAUSED
+    events = tracker.on_state(state_of(on_going_planning=3), 4000.0)
+    assert [e.kind for e in events] == [EventKind.RESUMED]
+
+
+def test_a_plan_held_at_home_ends_when_the_pause_code_clears() -> None:
+    tracker = _running(progress_area=17.5)
+    tracker.on_state(state_of(on_going_planning=0, planning_paused=10, on_going_recharging=1), 10.0)
+    events = tracker.on_state(
+        state_of(on_going_planning=0, planning_paused=0, battery_status=3), 20.0
+    )
+    assert [(e.kind, e.reason) for e in events] == [(EventKind.FINISHED, "stopped")]
+    assert tracker.current is None

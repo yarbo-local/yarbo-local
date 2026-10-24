@@ -89,6 +89,10 @@ class Run:
     pauses: int = 0
     announced: bool = True  # False while a start waits for plan_feedback to name the plan
     confirmed: bool = True  # False while a run known only from feedback awaits a state frame
+    # The robot drove itself home holding a pause reason, as for a blocked blade (code 10,
+    # 2026-10-24). The plan stays paused there until the code clears or it is resumed. Only
+    # known live: after a restart a pause code on the dock may be stale, so it is not adopted.
+    went_home: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -244,11 +248,14 @@ class PlanTracker:
             return []
         if codes.completed:
             return [self._finish(run, FinishReason.COMPLETED, at)]
-        if codes.recharging > 0:
+        if codes.recharging > 0 and codes.paused in (0, LOW_BATTERY_PAUSE):
             if codes.paused == LOW_BATTERY_PAUSE or (run.progress or 0.0) < NEARLY_DONE:
                 return [self._pause(run, state, at, Phase.RECHARGING, "low_battery_recharging")]
             return [self._finish(run, FinishReason.COMPLETED, at)]
         if codes.paused > 0:
+            # On its way home, it stopped for a reason of its own (a blocked blade, code 10)
+            # and holds it there: still paused, not recharging.
+            run = replace(run, went_home=codes.recharging > 0)
             return [self._pause(run, state, at, Phase.PAUSED, state.pause_reason or "unknown")]
         return [self._finish(run, FinishReason.STOPPED, at)]
 
@@ -262,7 +269,11 @@ class PlanTracker:
             return [self._event(EventKind.RESUMED, self.current, at)]
         if codes.completed:
             return [self._finish(run, FinishReason.COMPLETED, at)]
-        if run.phase is Phase.PAUSED and (codes.recharging > 0 or codes.charging):
+        if (
+            run.phase is Phase.PAUSED
+            and not run.went_home
+            and (codes.recharging > 0 or codes.charging)
+        ):
             if codes.paused == LOW_BATTERY_PAUSE:
                 self.current = replace(run, phase=Phase.RECHARGING, since=at)
                 return []
