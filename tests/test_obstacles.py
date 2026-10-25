@@ -79,7 +79,7 @@ def test_stored_ultrasonic_detections_are_dropped() -> None:
     data = tracker.to_dict()
     assert not ObstacleTracker.needs_migration(data)
     assert data["runs"][0]["barriers"] == [
-        {"points": [[1.0, 2.0]], "first_seen": 1.0, "last_seen": 1.0}
+        {"points": [[1.0, 2.0]], "first_seen": 1.0, "last_seen": 1.0, "reports": 1, "passes": 1}
     ]
     assert ObstacleTracker.from_dict(json.loads(json.dumps(data))).to_dict() == data
 
@@ -156,3 +156,20 @@ def test_runs_stored_one_barrier_per_cluster_are_grouped_on_load() -> None:
     assert run.obstacle_count == 2
     first = run.barriers[0]
     assert (first.first_seen, first.last_seen) == (110, 130)
+
+
+def test_reports_and_passes_are_counted_and_stored() -> None:
+    """Something fixed is seen again on later passes; a dog crossing once is not."""
+    tracker = ObstacleTracker()
+    tracker.on_plan_feedback({"planId": 2, "startTime": 100, "areaIds": [9]}, 100.0)
+    bins = [(0.0, 0.0), (0.5, 0.3), (0.2, 0.6)]
+    for t in (101.0, 101.5, 102.0, 400.0, 400.5, 900.0):  # three passes
+        tracker.on_barriers(_clusters(bins), t)
+    tracker.on_barriers(_clusters([(10.0, 10.0), (10.2, 10.1)]), 500.0)  # once
+    cans, dog = tracker.current.barriers
+    assert (cans.reports, cans.passes) == (6, 3)
+    assert (dog.reports, dog.passes) == (1, 1)
+    again = ObstacleTracker.from_dict(json.loads(json.dumps(tracker.to_dict())))
+    cans2, dog2 = again.current.barriers
+    assert (cans2.reports, cans2.passes) == (6, 3)
+    assert (dog2.reports, dog2.passes) == (1, 1)

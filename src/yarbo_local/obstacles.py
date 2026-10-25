@@ -21,6 +21,7 @@ from typing import Any
 from .models import RobotState
 
 OBJECT_GAP_M = 0.5  # a cluster this close to an object is part of it
+PASS_GAP_S = 60.0  # a report this long after the last one is a new pass by the object
 MAX_BARRIERS_PER_RUN = 2000
 MAX_RUNS = 30
 
@@ -71,6 +72,8 @@ class Barrier:
     points: list[tuple[float, float]]
     first_seen: float
     last_seen: float
+    reports: int = 1  # robot reports that touched this object
+    passes: int = 1  # separate sightings, PASS_GAP_S or more apart
 
     def near(self, points: list[Point], gap: float = OBJECT_GAP_M) -> bool:
         """Whether any of ``points`` lies inside the outline or within ``gap`` of it."""
@@ -94,9 +97,21 @@ class Barrier:
         return False
 
     def absorb(self, points: list[Point], first_seen: float, last_seen: float) -> None:
+        """One more report of this object."""
+        if first_seen - self.last_seen >= PASS_GAP_S:
+            self.passes += 1
+        self.reports += 1
         self.points = outline(self.points + points)
         self.first_seen = min(self.first_seen, first_seen)
         self.last_seen = max(self.last_seen, last_seen)
+
+    def join(self, other: Barrier) -> None:
+        """Take in another object that turned out to be part of this one."""
+        self.points = outline(self.points + other.points)
+        self.first_seen = min(self.first_seen, other.first_seen)
+        self.last_seen = max(self.last_seen, other.last_seen)
+        self.reports += other.reports
+        self.passes = max(self.passes, other.passes)
 
     @property
     def centre(self) -> tuple[float, float]:
@@ -110,6 +125,8 @@ class Barrier:
             "points": [[_r(x, 2), _r(y, 2)] for x, y in self.points],
             "first_seen": _r(self.first_seen, 1),
             "last_seen": _r(self.last_seen, 1),
+            "reports": self.reports,
+            "passes": self.passes,
         }
 
     @classmethod
@@ -118,6 +135,8 @@ class Barrier:
             points=[(float(p[0]), float(p[1])) for p in d.get("points") or []],
             first_seen=float(d.get("first_seen", 0.0)),
             last_seen=float(d.get("last_seen", 0.0)),
+            reports=int(d.get("reports", 1)),
+            passes=int(d.get("passes", 1)),
         )
 
 
@@ -168,8 +187,19 @@ class Run:
         )
         for stored in (Barrier.from_dict(x) for x in d.get("barriers") or []):
             if stored.points:
-                run.add_cluster(stored.points, stored.first_seen, stored.last_seen)
+                run._add_stored(stored)
         return run
+
+    def _add_stored(self, stored: Barrier) -> None:
+        near = [b for b in self.barriers if b.near(stored.points)]
+        if not near:
+            stored.points = outline(stored.points)
+            self.barriers.append(stored)
+            return
+        near[0].join(stored)
+        for other in near[1:]:
+            near[0].join(other)
+            self.barriers.remove(other)
 
     def add_cluster(
         self, points: list[Point], first_seen: float, last_seen: float
@@ -183,7 +213,7 @@ class Run:
             keep = near[0]
             keep.absorb(points, first_seen, last_seen)
             for other in near[1:]:
-                keep.absorb(other.points, other.first_seen, other.last_seen)
+                keep.join(other)
                 self.barriers.remove(other)
             return None
         if len(self.barriers) >= MAX_BARRIERS_PER_RUN:
